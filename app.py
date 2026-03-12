@@ -16,10 +16,9 @@ def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/api/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"])
     
-    # Config Database - uu tien DATABASE_URL (Railway tu cap), neu khong thi build tu bien con
+    # Config Database - ưu tiên DATABASE_URL (Railway tự cấp), sau đó đến DB_USER... cuối cùng là SQLite
     database_url = os.getenv('DATABASE_URL')
     if database_url:
-        # Railway dung postgres://, SQLAlchemy can postgresql://
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     else:
         db_user = os.getenv('DB_USER')
@@ -27,9 +26,17 @@ def create_app():
         db_host = os.getenv('DB_HOST')
         db_port = os.getenv('DB_PORT', '5432')
         db_name = os.getenv('DB_NAME')
-        if not all([db_user, db_pass, db_host, db_name]):
-            raise RuntimeError("Thieu cau hinh Database trong .env! Can DB_USER, DB_PASS, DB_HOST, DB_NAME")
-        database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        
+        if all([db_user, db_pass, db_host, db_name]):
+            database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        else:
+            # Dự phòng SQLite để ứng dụng không bị Crash khi chưa kịp cài biến môi trường
+            # CHÚ Ý: Production nên dùng Postgres để chịu tải 100+ users
+            print("[WARNING] Thieu cau hinh Postgres. Dang su dung SQLite du phong...")
+            basedir = os.path.abspath(os.path.dirname(__file__))
+            database_url = f"sqlite:///{os.path.join(basedir, 'instance', 'checkin_railway.db')}"
+            # Đảm bảo thư mục instance tồn tại
+            os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
