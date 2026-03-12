@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVT Check-in Dashboard</title>
+    <meta name="zalo-platform-site-verification" content="EEAVUVZg3baJs8PprkumJo_yg6h3YdmnC3Kv" />
+    <style>
+        :root {
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-dark: #b8860b;
+            --bg-base: #0a0b10;
+            --bg-card: rgba(20, 22, 30, 0.85);
+            --text-main: #f3e5ab;
+            --text-muted: #a99a66;
+            --success: #00ff88;
+            --border-glow: rgba(212, 175, 55, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            background-image:
+                linear-gradient(rgba(10, 11, 16, 0.3), rgba(10, 11, 16, 0.5)),
+                url('/static/images/dong_son_bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(10, 11, 16, 0.9);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold-dark);
+            box-shadow: 0 4px 25px var(--border-glow);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--gold-dark);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+            background: #000;
+        }
+
+        .clock-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5.5rem;
+            font-weight: 200;
+            color: var(--gold-light);
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            letter-spacing: 5px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            border: 1px solid var(--gold-dark);
+            padding: 6px 16px;
+            border-radius: 30px;
+            background: rgba(212, 175, 55, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 8px var(--success);
+            }
+
+            50% {
+                opacity: 0.4;
+                box-shadow: 0 0 2px var(--success);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .stats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4rem;
+            margin-bottom: 3.5rem;
+        }
+
+        .stat-card {
+            background: rgba(10, 11, 16, 0.6);
+            border-radius: 16px;
+            padding: 1.2rem;
+            border: 1px solid var(--gold-dark);
+            box-shadow: inset 0 0 30px rgba(212, 175, 55, 0.1), 0 8px 32px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            min-width: 220px;
+            text-align: center;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+        }
+
+        .stat-card h3 {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .stat-card .value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--gold-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding-bottom: 15px;
+        }
+
+        .log-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .log-item {
+            background: rgba(10, 11, 16, 0.65);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        .log-item:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: var(--gold-dark);
+            border-top-left-radius: 16px;
+            border-bottom-left-radius: 16px;
+            opacity: 0.5;
+            transition: all 0.3s;
+        }
+
+        .log-item:hover {
+            transform: translateY(-4px) scale(1.01);
+            border-color: var(--gold-primary);
+            box-shadow: 0 10px 30px var(--border-glow);
+        }
+
+        .log-item:hover:before {
+            opacity: 1;
+            background: var(--gold-primary);
+            box-shadow: 0 0 15px var(--gold-primary);
+        }
+
+        .log-item.new {
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 25px var(--border-glow);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--gold-primary);
+            overflow: hidden;
+            border: 2px solid var(--gold-dark);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            flex-shrink: 0;
+        }
+
+        .log-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .log-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .log-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .zalo-status {
+            color: var(--success);
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 6rem 2rem;
+            color: var(--gold-dark);
+        }
+
+        .empty-state svg {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.3));
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            color: #000;
+            border: 1px solid var(--gold-light);
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            margin-left: auto;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(212, 175, 55, 0.6);
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 100%);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 90%; max-width: 500px;
+            box-shadow: 0 0 50px var(--border-glow);
+            position: relative;
+        }
+        .modal-header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding-bottom: 1rem;
+        }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--gold-light); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .form-input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--gold-dark);
+            padding: 12px 15px;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+        .form-input:focus { outline: none; border-color: var(--gold-primary); box-shadow: 0 0 10px var(--border-glow); }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1><img src="/static/images/logo_ci.png" class="logo" alt="Logo"> CHECK-IN</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="status" style="background: rgba(0,0,0,0.5);">
+                IP: <span id="deviceIp" style="color: var(--gold-primary); margin-left: 5px;">--</span>
+            </div>
+            <div class="status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Đang Kết Nối</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Sĩ Số Điểm Danh</h3>
+                <div class="value" id="todayCount">0</div>
+            </div>
+            <div class="clock-display" id="digitalClock">
+                00:00
+            </div>
+        </div>
+
+        <div class="section-title">
+            <span>LỊCH SỬ ĐIỂM DANH</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: rgba(212, 175, 55, 0.1); color: var(--gold-primary);" onclick="openUserModal()">⚙ Nhân Viên</button>
+                <button class="btn" onclick="refreshLogs()">Làm Mới</button>
+            </div>
+        </div>
+
+        <!-- Modal Admin -->
+        <div id="userModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 style="color: var(--gold-primary); font-size: 1.5rem;">QUẢN LÝ NHÂN VIÊN</h2>
+                </div>
+                <div class="form-group">
+                    <label>Face ID (Người dùng ID trên Camera)</label>
+                    <input type="text" id="faceIdInput" class="form-input" placeholder="Ví dụ: 1001">
+                </div>
+                <div class="form-group">
+                    <label>Họ và Tên</label>
+                    <input type="text" id="nameInput" class="form-input" placeholder="Ví dụ: Nguyễn Văn A">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" style="background: transparent; color: #fff; border-color: #444;" onclick="closeUserModal()">Hủy</button>
+                    <button class="btn" onclick="saveUser()">Lưu Thông Tin</button>
+                </div>
+                <div id="userList" style="margin-top: 2rem; max-height: 200px; overflow-y: auto; border-top: 1px solid #333; padding-top: 1rem;">
+                    <!-- User list items -->
+                </div>
+            </div>
+        </div>
+
+        <div class="log-list" id="logList">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+                <p style="font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px;">Chỉnh tề đội ngũ - Đón
+                    chào ngày mới</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastLogId = 0;
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                document.getElementById('statusDot').style.background = data.polling ? 'var(--success)' : '#ef4444';
+                document.getElementById('statusDot').style.boxShadow = data.polling ? '0 0 8px var(--success)' : '0 0 8px #ef4444';
+                document.getElementById('statusText').textContent = data.polling ? 'Đã Kết Nối' : 'Mất Kết Nối';
+                document.getElementById('deviceIp').textContent = data.device_ip;
+            } catch (e) {
+                document.getElementById('statusDot').style.background = '#ef4444';
+                document.getElementById('statusDot').style.boxShadow = '0 0 8px #ef4444';
+                document.getElementById('statusText').textContent = 'Lỗi Máy Chủ';
+            }
+        }
+
+        async function refreshLogs() {
+            try {
+                const res = await fetch('/api/logs/today');
+                const logs = await res.json();
+
+                document.getElementById('todayCount').textContent = logs.length;
+
+                const container = document.getElementById('logList');
+
+                if (logs.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <p style="font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px;">Chỉnh tề đội ngũ - Đón chào ngày mới</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = logs.map((log, i) => {
+                    const isNew = log.id > lastLogId && i === 0;
+                    const initial = log.name.charAt(0).toUpperCase();
+                    const avatarHtml = log.image
+                        ? `<img src="/${log.image}" alt="${log.name}">`
+                        : initial;
+
+                    return `
+                        <div class="log-item ${isNew ? 'new' : ''}">
+                            <div class="log-avatar">${avatarHtml}</div>
+                            <div class="log-info">
+                                <div class="log-name">${log.name}</div>
+                                <div class="log-time">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                    ${log.time}
+                                </div>
+                            </div>
+                            <!-- Icon Zalo nếu đã gửi thành công -->
+                            ${log.zalo_notified ? `<div class="zalo-status">✓ Zalo Đã Báo</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                if (logs.length > 0) {
+                    lastLogId = logs[0].id;
+                }
+            } catch (e) {
+                console.error('Error fetching logs:', e);
+            }
+        }
+
+        // Admin Functions
+        function openUserModal() {
+            document.getElementById('userModal').style.display = 'flex';
+            fetchUsers();
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        async function fetchUsers() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const list = document.getElementById('userList');
+            list.innerHTML = users.map(u => `
+                <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 0.9rem;">
+                    <span><b>${u.face_id}</b>: ${u.name}</span>
+                    <span style="color: var(--gold-dark); cursor: pointer;" onclick="editUser('${u.face_id}', '${u.name}')">Sửa</span>
+                </div>
+            `).join('');
+        }
+
+        function editUser(id, name) {
+            document.getElementById('faceIdInput').value = id;
+            document.getElementById('nameInput').value = name;
+        }
+
+        async function saveUser() {
+            const face_id = document.getElementById('faceIdInput').value;
+            const name = document.getElementById('nameInput').value;
+            if(!face_id || !name) return alert('Vui lòng nhập đủ ID và Tên');
+
+            try {
+                const res = await fetch('/api/user/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ face_id, name })
+                });
+                const result = await res.json();
+                if(result.status === 'success') {
+                    alert('Lưu thành công!');
+                    fetchUsers();
+                    refreshLogs();
+                }
+            } catch(e) { alert('Lỗi: ' + e); }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('digitalClock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Initial load
+        fetchStatus();
+        refreshLogs();
+
+        // Auto refresh
+        setInterval(fetchStatus, 5000);
+        setInterval(refreshLogs, 3000);
+    </script>
+</body>
+
+</html>

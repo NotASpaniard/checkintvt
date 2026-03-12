@@ -1,0 +1,47 @@
+# Git ignore file
+# Secrets & Config
+.env
+.env.*
+!.env.example
+miniapp/.env.local
+miniapp/.env
+
+# Database files (SQLite local)
+instance/
+*.db
+*.sqlite3
+
+# Captured images (luu tren may local, khong len git)
+static/captures/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Node modules (Zalo Mini App)
+miniapp/node_modules/
+miniapp/.zmp/
+
+# Build output
+miniapp/dist/
+miniapp/build/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/*.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
