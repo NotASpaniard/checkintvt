@@ -25,6 +25,7 @@ class Log(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     checkin_time_str = db.Column(db.String(50), nullable=True) # Time string from device
     image_path = db.Column(db.String(200), nullable=True)
+    image_data = db.Column(db.Text, nullable=True) # Base64 image data for Cloud persistence
     zalo_notified = db.Column(db.Boolean, default=False) # Đã bắn notification Zalo chưa
     event_type = db.Column(db.String(50), default='checkin')
     

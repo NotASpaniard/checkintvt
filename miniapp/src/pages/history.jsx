@@ -67,11 +67,12 @@ function HistoryPage() {
           logs.map((log) => (
             <Box key={log.id} className="log-item">
               <Box className="log-avatar-wrap">
-                {log.image ? (
+                {log.image_data || log.image ? (
                   <img
-                    src={`${API_BASE}/${log.image}`}
+                    src={log.image_data ? log.image_data : `${API_BASE}/${log.image}`}
                     alt={log.name}
                     className="log-avatar-img"
+                    onerror={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=' + log.name; }}
                   />
                 ) : (
                   <Box className="log-avatar-placeholder">

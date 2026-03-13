@@ -55,6 +55,7 @@ def create_app():
         try:
             from sqlalchemy import text
             db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS pin VARCHAR(10)"))
+            db.session.execute(text("ALTER TABLE checkin_logs ADD COLUMN IF NOT EXISTS image_data TEXT"))
             db.session.commit()
         except Exception as e:
             print(f"[DATABASE] Auto-migration error (co the vi SQLite hoac da co cot): {e}")
@@ -99,6 +100,7 @@ def register_routes(app):
                 "face_id": log.face_id,
                 "time": log.checkin_time_str or log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 "image": log.image_path,
+                "image_data": log.image_data,
                 "zalo_notified": log.zalo_notified
             })
         return jsonify(result)
@@ -124,6 +126,7 @@ def register_routes(app):
                 "face_id": log.face_id,
                 "time": log.checkin_time_str or log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 "image": log.image_path,
+                "image_data": log.image_data, # New Base64 support
                 "zalo_notified": log.zalo_notified
             })
         return jsonify(result)
@@ -273,7 +276,15 @@ def register_routes(app):
 
         # Luu anh neu co
         image_path = None
+        image_data_stored = None
         if image_b64:
+            # Luu vao database (dam bao prefix hop le)
+            if not image_b64.startswith('data:'):
+                image_data_stored = f"data:image/jpeg;base64,{image_b64}"
+            else:
+                image_data_stored = image_b64
+
+            # Van co gang luu vao file de du phong local
             try:
                 img_data = base64.b64decode(image_b64.split(',')[-1])
                 import os as _os
@@ -285,7 +296,7 @@ def register_routes(app):
                     f.write(img_data)
                 image_path = filepath
             except Exception as e:
-                print(f"[!] Luu anh that bai: {e}")
+                print(f"[!] Luu file anh that bai (co the do Cloud filesystem): {e}")
 
         # Tim hoac tao user
         user = None
@@ -308,6 +319,8 @@ def register_routes(app):
             face_id=str(face_id_raw),
             checkin_time_str=snap_time,
             image_path=image_path,
+            image_data=image_data_stored,
+            event_type='checkin',
             zalo_notified=False
         )
         db.session.add(new_log)
