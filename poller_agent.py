@@ -36,11 +36,38 @@ def get_device_url(endpoint):
 def create_session():
     import base64 as b64
     session = requests.Session()
+    
+    # Tao Basic Auth header
     auth_string = f"{DEVICE_USER}:{DEVICE_PASS}"
-    auth_b64 = b64.b64encode(auth_string.encode()).decode()
-    session.headers.update({"Authorization": f"Basic {auth_b64}"})
-    session.cookies.set("auInfo", auth_b64)
-    return session
+    auth_base64 = b64.b64encode(auth_string.encode()).decode()
+    
+    session.headers.update({
+        "Authorization": f"Basic {auth_base64}",
+        "Content-Type": "application/xml"
+    })
+    session.cookies.set("auInfo", auth_base64)
+    
+    # BUOC BAT BUOC: DoLogin de thiet lap session thuc su tren Camera
+    login_payload = f'''<?xml version="1.0" encoding="UTF-8"?>
+<config version="1.0" xmlns="http://www.ipc.com/ver10">
+<macInfo><address type="string"><![CDATA[00-00-00-00-00-00]]></address></macInfo>
+<checkInfo><pcTime type="string"><![CDATA[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]]></pcTime></checkInfo>
+</config>'''
+    
+    # Tang timeout len 30s vi mang dang loss 60%
+    try:
+        r = session.post(get_device_url("DoLogin"), data=login_payload, timeout=30)
+        if r.status_code == 200 and 'status="success"' in r.text:
+            return session
+        elif r.status_code == 401:
+            print(f"[!] Sai mat khau Camera (401).")
+            return None
+        else:
+            print(f"[!] DoLogin do loi: {r.status_code}")
+            return None
+    except Exception as e:
+        print(f"[-] Loi mang khi DoLogin (Mang dang yeu): {e}")
+        return None
 
 def search_snap_faces(start_time, end_time):
     payload = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -52,6 +79,9 @@ def search_snap_faces(start_time, end_time):
 </config>'''
     try:
         session = create_session()
+        if not session:
+            return []
+            
         r = session.post(get_device_url("SearchSnapFaceByTime"), data=payload,
                          headers={"Content-Type": "application/xml"}, timeout=GLOBAL_TIMEOUT)
         
@@ -84,6 +114,9 @@ def get_snap_face_details(snap_time, face_id):
 </config>'''
     try:
         session = create_session()
+        if not session:
+            return None
+            
         r = session.post(get_device_url("SearchSnapFaceByKey"), data=payload,
                          headers={"Content-Type": "application/xml"}, timeout=GLOBAL_TIMEOUT)
         root = ET.fromstring(r.text)
