@@ -185,6 +185,18 @@ def register_routes(app):
             "poll_interval": dp.POLL_INTERVAL
         })
 
+    @app.route('/api/debug/env_check')
+    def debug_env_check():
+        """TAM THOI: Kiem tra bien moi truong tren Railway. XOA SAU KHI DEBUG XONG."""
+        key = os.getenv('POLLER_API_KEY', '')
+        db_url = os.getenv('DATABASE_URL', '')
+        return jsonify({
+            "poller_key_set": bool(key),
+            "poller_key_len": len(key),
+            "poller_key_preview": key[:5] + "..." if key else "(empty)",
+            "database_url_set": bool(db_url),
+        })
+
     @app.route('/api/internal/checkin', methods=['POST'])
     def internal_checkin():
         """Nhan du lieu check-in tu poller_agent.py chay o may local.

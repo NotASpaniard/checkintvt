@@ -1,14 +1,6 @@
 """
 Poller Agent - Chay TREN MAY TINH VAN PHONG (24/7)
 Poll Camera TVT qua mang LAN, day du lieu len Railway API.
-
-Cach chay:
-    python poller_agent.py
-
-Yeu cau trong .env:
-    DEVICE_IP, DEVICE_PORT, DEVICE_USER, DEVICE_PASS
-    RAILWAY_API_URL=https://your-app.railway.app
-    POLLER_API_KEY=<secret-key>
 """
 
 import requests
@@ -29,18 +21,17 @@ DEVICE_PASS = os.getenv("DEVICE_PASS")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
 
 # ---- Cau hinh Railway ----
-RAILWAY_URL = os.getenv("RAILWAY_API_URL", "http://localhost:5000")
+RAILWAY_URL = os.getenv("RAILWAY_API_URL", "").rstrip('/')
 POLLER_API_KEY = os.getenv("POLLER_API_KEY", "")
+
+# TANG TIMEOUT DE CHIU LAG
+GLOBAL_TIMEOUT = 60 
 
 if not DEVICE_IP or not DEVICE_PASS:
     raise RuntimeError("Thieu DEVICE_IP hoac DEVICE_PASS trong .env!")
 
-last_poll_time = None
-
-
 def get_device_url(endpoint):
     return f"http://{DEVICE_IP}:{DEVICE_PORT}/{endpoint}"
-
 
 def create_session():
     import base64 as b64
@@ -50,7 +41,6 @@ def create_session():
     session.headers.update({"Authorization": f"Basic {auth_b64}"})
     session.cookies.set("auInfo", auth_b64)
     return session
-
 
 def search_snap_faces(start_time, end_time):
     payload = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -63,7 +53,12 @@ def search_snap_faces(start_time, end_time):
     try:
         session = create_session()
         r = session.post(get_device_url("SearchSnapFaceByTime"), data=payload,
-                         headers={"Content-Type": "application/xml"}, timeout=30)
+                         headers={"Content-Type": "application/xml"}, timeout=GLOBAL_TIMEOUT)
+        
+        if r.status_code == 401:
+            print(f"[!] Camera tu choi Basic Auth (401).")
+            return []
+
         root = ET.fromstring(r.text)
         ns = {"ns": "http://www.ipc.com/ver10"}
         results = []
@@ -74,9 +69,8 @@ def search_snap_faces(start_time, end_time):
                 results.append((snap_time.text, face_id.text))
         return results
     except Exception as e:
-        print(f"[-] Loi search faces: {e}")
+        print(f"[-] Loi ket noi Camera (Search): {e}")
         return []
-
 
 def get_snap_face_details(snap_time, face_id):
     payload = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -91,7 +85,7 @@ def get_snap_face_details(snap_time, face_id):
     try:
         session = create_session()
         r = session.post(get_device_url("SearchSnapFaceByKey"), data=payload,
-                         headers={"Content-Type": "application/xml"}, timeout=30)
+                         headers={"Content-Type": "application/xml"}, timeout=GLOBAL_TIMEOUT)
         root = ET.fromstring(r.text)
         ns = {"ns": "http://www.ipc.com/ver10"}
         result = {"snap_time": None, "name": "Stranger", "person_id": None,
@@ -99,91 +93,71 @@ def get_snap_face_details(snap_time, face_id):
         snap_info = root.find(".//ns:snapInfo", ns)
         if snap_info is not None:
             t = snap_info.find("ns:time", ns)
-            if t is not None:
-                result["snap_time"] = t.text
+            if t is not None: result["snap_time"] = t.text
             pic = snap_info.find("ns:pictureData", ns)
-            if pic is not None and pic.text:
-                result["image_data"] = pic.text.strip()
+            if pic is not None and pic.text: result["image_data"] = pic.text.strip()
+        
         match_info = root.find(".//ns:matchInfo", ns)
         if match_info is not None:
             sim = match_info.find("ns:similarity", ns)
-            if sim is not None:
-                result["similarity"] = int(sim.text)
+            if sim is not None: result["similarity"] = int(sim.text)
             person_info = match_info.find("ns:personInfo", ns)
             if person_info is not None:
                 name_node = person_info.find("ns:name", ns)
-                if name_node is not None:
-                    result["name"] = name_node.text
+                if name_node is not None: result["name"] = name_node.text
                 job_node = person_info.find("ns:jobNumber", ns)
-                if job_node is not None and job_node.text and job_node.text.strip():
-                    result["person_id"] = job_node.text.strip()
-                else:
-                    id_node = person_info.find("ns:identifyNumber", ns)
-                    if id_node is not None and id_node.text and id_node.text.strip():
-                        result["person_id"] = id_node.text.strip()
+                if job_node is not None and job_node.text: result["person_id"] = job_node.text.strip()
         return result
     except Exception as e:
-        print(f"[-] Loi get face details: {e}")
+        print(f"[-] Loi lay chi tiet: {e}")
         return None
 
-
 def push_to_railway(details, face_id, image_data_b64):
-    """Day du lieu check-in len Railway API."""
-    headers = {
-        "Content-Type": "application/json",
-        "X-Poller-Key": POLLER_API_KEY
-    }
+    headers = {"Content-Type": "application/json", "X-Poller-Key": POLLER_API_KEY}
     payload = {
-        "face_id": str(face_id),
-        "snap_time": details["snap_time"],
-        "name": details["name"],
-        "person_id": details["person_id"],
-        "similarity": details["similarity"],
-        "image_b64": image_data_b64
+        "face_id": str(face_id), "snap_time": details["snap_time"],
+        "name": details["name"], "person_id": details["person_id"],
+        "similarity": details["similarity"], "image_b64": image_data_b64
     }
     try:
-        r = requests.post(f"{RAILWAY_URL}/api/internal/checkin",
-                          json=payload, headers=headers, timeout=15)
-        result = r.json()
-        if result.get("status") == "ok":
-            print(f"[OK] Pushed: {details['name']} at {details['snap_time']}")
+        r = requests.post(f"{RAILWAY_URL}/api/internal/checkin", json=payload, headers=headers, timeout=30)
+        if r.status_code == 200:
+            print(f"[OK] Railway nhan: {details['name']} ({details['snap_time']})")
             return True
         else:
-            print(f"[!] Railway tu choi: {result}")
-            return False
+            print(f"[!] Railway loi ({r.status_code}): {r.text}")
+        return False
     except Exception as e:
-        print(f"[-] Loi ket noi Railway: {e}")
+        print(f"[-] Loi day len Cloud: {e}")
         return False
 
-
-def poll_once():
-    global last_poll_time
-    now = datetime.now()
-    if last_poll_time is None:
-        start = (now - timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        start = last_poll_time.strftime("%Y-%m-%d %H:%M:%S")
-    end = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[*] Polling {start} -> {end}")
-
-    events = search_snap_faces(start, end)
-    print(f"[*] Found {len(events)} events")
-    for snap_time, face_id in events:
-        details = get_snap_face_details(snap_time, face_id)
-        if details:
-            push_to_railway(details, face_id, details.get("image_data"))
-    last_poll_time = now
-
-
 def main():
-    print(f"[+] Poller Agent khoi dong | Device: {DEVICE_IP} | Server: {RAILWAY_URL}")
+    print(f"[+] POLLER AGENT v1.1 (REVERTED)")
+    print(f"[+] Camera: {DEVICE_IP}:{DEVICE_PORT} | Server: {RAILWAY_URL}")
+    print("-" * 50)
+    
+    last_poll_time = None
+    
     while True:
         try:
-            poll_once()
-        except Exception as e:
-            print(f"[-] Polling error: {e}")
+            now = datetime.now()
+            # Quet lùi 30 phut de chac chan khong sot
+            start = (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+            end = now.strftime("%Y-%m-%d %H:%M:%S")
+            
+            events = search_snap_faces(start, end)
+            if events:
+                print(f"[*] Found {len(events)} events in last 30m.")
+                for snap_time, face_id in events:
+                    details = get_snap_face_details(snap_time, face_id)
+                    if details:
+                        push_to_railway(details, face_id, details.get("image_data"))
+            else:
+                print(f"[.] No events found ({start} -> {end})")
+                
+        except KeyboardInterrupt: break
+        except Exception as e: print(f"[-] Error: {e}")
         time.sleep(POLL_INTERVAL)
-
 
 if __name__ == "__main__":
     main()
