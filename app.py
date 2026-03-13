@@ -135,7 +135,8 @@ def register_routes(app):
                 "face_id": user.face_id,
                 "name": user.name,
                 "department": user.department,
-                "zalo_id": user.zalo_user_id
+                "zalo_id": user.zalo_user_id,
+                "pin": user.pin or "Chua dat"
             })
         return jsonify(result)
 

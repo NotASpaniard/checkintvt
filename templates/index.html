@@ -591,15 +591,16 @@
             const list = document.getElementById('userList');
             list.innerHTML = users.map(u => `
                 <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 0.9rem;">
-                    <span><b>${u.face_id}</b>: ${u.name}</span>
-                    <span style="color: var(--gold-dark); cursor: pointer;" onclick="editUser('${u.face_id}', '${u.name}')">Sửa</span>
+                    <span><b>${u.face_id}</b>: ${u.name} <span style="color: var(--text-muted); margin-left: 10px;">(PIN: ${u.pin})</span></span>
+                    <span style="color: var(--gold-dark); cursor: pointer;" onclick="editUser('${u.face_id}', '${u.name}', '${u.pin}')">Sửa</span>
                 </div>
             `).join('');
         }
 
-        function editUser(id, name) {
+        function editUser(id, name, pin) {
             document.getElementById('faceIdInput').value = id;
             document.getElementById('nameInput').value = name;
+            document.getElementById('pinInput').value = pin === 'Chua dat' ? '' : pin;
         }
 
         async function saveUser() {
