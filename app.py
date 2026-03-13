@@ -107,10 +107,20 @@ def register_routes(app):
     
     @app.route('/api/logs/today')
     def api_logs_today():
-        """Get today's check-in logs"""
+        """Get today's check-in logs. Support filtering by zalo_id."""
         from datetime import datetime, timedelta
+        from flask import request
+        
+        zalo_id_filter = request.args.get('zalo_id')
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        logs = Log.query.filter(Log.timestamp >= today).order_by(Log.timestamp.desc()).all()
+        
+        query = Log.query.filter(Log.timestamp >= today)
+        
+        if zalo_id_filter:
+            # Chi lay logs cua user co zalo_id nay
+            query = query.join(User).filter(User.zalo_user_id == zalo_id_filter)
+            
+        logs = query.order_by(Log.timestamp.desc()).all()
         result = []
         for log in logs:
             user_name = "Stranger"

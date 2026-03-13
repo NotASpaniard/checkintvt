@@ -17,6 +17,17 @@ function HomePage() {
 
   const { openSnackbar } = useSnackbar();
 
+  // Khoi phuc trang thai tu Storage khi moi vao
+  useEffect(() => {
+    const savedNoti = localStorage.getItem("notiGranted");
+    const savedLinked = localStorage.getItem("isLinked");
+    const savedName = localStorage.getItem("staffName");
+
+    if (savedNoti === "true") setNotiGranted(true);
+    if (savedLinked === "true") setIsLinked(true);
+    if (savedName) setStaffName(savedName);
+  }, []);
+
   // Dong ho so
   useEffect(() => {
     const updateClock = () => {
@@ -78,6 +89,8 @@ function HomePage() {
       const result = await res.json();
       if (result.status === "success") {
         setIsLinked(true);
+        localStorage.setItem("isLinked", "true");
+        localStorage.setItem("staffName", staffName);
         setShowLinkModal(false);
         openSnackbar({ text: "Lien ket tai khoan thanh cong!", type: "success" });
       } else {
@@ -92,6 +105,7 @@ function HomePage() {
     requestSendNotification({
       success: () => {
         setNotiGranted(true);
+        localStorage.setItem("notiGranted", "true");
         openSnackbar({ text: "Da cap quyen thong bao!", type: "success" });
       },
       fail: (err) => openSnackbar({ text: "Loi cap quyen", type: "error" }),

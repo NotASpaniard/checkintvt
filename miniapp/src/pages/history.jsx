@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Icon, Page, Text, Spinner } from "zmp-ui";
+import { getUserInfo } from "zmp-sdk";
 
 // TODO: Doi thanh URL Backend that khi deploy
 const API_BASE = import.meta.env.VITE_API_BASE || "https://checkintvt-production.up.railway.app";
@@ -10,14 +11,26 @@ function HistoryPage() {
   const [todayCount, setTodayCount] = useState(0);
 
   useEffect(() => {
-    fetchLogs();
-    const timer = setInterval(fetchLogs, 10000); // refresh moi 10 giay
-    return () => clearInterval(timer);
+    getUserInfo({
+      success: (data) => {
+        const zaloId = data.userInfo.id;
+        fetchLogs(zaloId);
+        const timer = setInterval(() => fetchLogs(zaloId), 10000);
+        return () => clearInterval(timer);
+      },
+      fail: (err) => {
+        console.error("getUserInfo error:", err);
+        fetchLogs(); // fallback
+      }
+    });
   }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (zaloId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/logs/today`, {
+      let url = `${API_BASE}/api/logs/today`;
+      if (zaloId) url += `?zalo_id=${zaloId}`;
+
+      const res = await fetch(url, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       const data = await res.json();
