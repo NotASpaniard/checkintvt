@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Icon, Page, Text, Spinner } from "zmp-ui";
 
 // TODO: Doi thanh URL Backend that khi deploy
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://checkintvt-production.up.railway.app";
 
 function HistoryPage() {
   const [logs, setLogs] = useState([]);

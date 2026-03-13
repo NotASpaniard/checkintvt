@@ -358,39 +358,68 @@
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
             z-index: 1000;
             backdrop-filter: blur(5px);
-            align-items: center; justify-content: center;
+            align-items: center;
+            justify-content: center;
         }
+
         .modal-content {
             background: var(--bg-card);
             border: 2px solid var(--gold-dark);
             border-radius: 20px;
             padding: 2.5rem;
-            width: 90%; max-width: 500px;
+            width: 90%;
+            max-width: 500px;
             box-shadow: 0 0 50px var(--border-glow);
             position: relative;
         }
+
         .modal-header {
             margin-bottom: 2rem;
             border-bottom: 1px solid rgba(212, 175, 55, 0.2);
             padding-bottom: 1rem;
         }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--gold-light); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
         .form-input {
             width: 100%;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--gold-dark);
             padding: 12px 15px;
             border-radius: 8px;
             color: var(--text-main);
             font-size: 1rem;
         }
-        .form-input:focus { outline: none; border-color: var(--gold-primary); box-shadow: 0 0 10px var(--border-glow); }
-        .modal-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 10px var(--border-glow);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
     </style>
 </head>
 
@@ -422,7 +451,8 @@
         <div class="section-title">
             <span>LỊCH SỬ ĐIỂM DANH</span>
             <div style="display: flex; gap: 10px;">
-                <button class="btn" style="background: rgba(212, 175, 55, 0.1); color: var(--gold-primary);" onclick="openUserModal()">⚙ Nhân Viên</button>
+                <button class="btn" style="background: rgba(212, 175, 55, 0.1); color: var(--gold-primary);"
+                    onclick="openUserModal()">⚙ Nhân Viên</button>
                 <button class="btn" onclick="refreshLogs()">Làm Mới</button>
             </div>
         </div>
@@ -441,11 +471,21 @@
                     <label>Họ và Tên</label>
                     <input type="text" id="nameInput" class="form-input" placeholder="Ví dụ: Nguyễn Văn A">
                 </div>
+                <div class="form-group">
+                    <label>Mã PIN Nhân Viên (4-6 số)</label>
+                    <input type="text" id="pinInput" class="form-input" placeholder="Ví dụ: 1234">
+                </div>
+                <div class="form-group" style="border-top: 1px solid #333; padding-top: 1rem;">
+                    <label style="color: var(--gold-primary);">Mã PIN Quản Trị (Để xác nhận lưu)</label>
+                    <input type="password" id="adminPinInput" class="form-input" placeholder="Nhập Admin PIN">
+                </div>
                 <div class="modal-actions">
-                    <button class="btn" style="background: transparent; color: #fff; border-color: #444;" onclick="closeUserModal()">Hủy</button>
+                    <button class="btn" style="background: transparent; color: #fff; border-color: #444;"
+                        onclick="closeUserModal()">Hủy</button>
                     <button class="btn" onclick="saveUser()">Lưu Thông Tin</button>
                 </div>
-                <div id="userList" style="margin-top: 2rem; max-height: 200px; overflow-y: auto; border-top: 1px solid #333; padding-top: 1rem;">
+                <div id="userList"
+                    style="margin-top: 2rem; max-height: 200px; overflow-y: auto; border-top: 1px solid #333; padding-top: 1rem;">
                     <!-- User list items -->
                 </div>
             </div>
@@ -565,21 +605,28 @@
         async function saveUser() {
             const face_id = document.getElementById('faceIdInput').value;
             const name = document.getElementById('nameInput').value;
-            if(!face_id || !name) return alert('Vui lòng nhập đủ ID và Tên');
+            const pin = document.getElementById('pinInput').value;
+            const admin_pin = document.getElementById('adminPinInput').value;
+
+            if (!face_id || !name || !admin_pin) return alert('Vui lòng nhập đủ ID, Tên và PIN Quản Trị');
+            if (pin && (pin.length < 4 || pin.length > 6)) return alert('Mã PIN nhân viên nên từ 4-6 số');
 
             try {
                 const res = await fetch('/api/user/add', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ face_id, name })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ face_id, name, pin, admin_pin })
                 });
                 const result = await res.json();
-                if(result.status === 'success') {
+                if (result.status === 'success') {
                     alert('Lưu thành công!');
+                    document.getElementById('adminPinInput').value = ''; // Reset admin pin
                     fetchUsers();
                     refreshLogs();
+                } else {
+                    alert('Lỗi: ' + result.error);
                 }
-            } catch(e) { alert('Lỗi: ' + e); }
+            } catch (e) { alert('Lỗi kết nối: ' + e); }
         }
 
         function updateClock() {

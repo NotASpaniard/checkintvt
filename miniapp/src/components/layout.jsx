@@ -11,6 +11,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 import HomePage from "../pages/index";
+// Dung link Railway Cloud
+const API_BASE = import.meta.env.VITE_API_BASE || "https://checkintvt-production.up.railway.app";
 import HistoryPage from "../pages/history";
 
 const CustomBottomNav = () => {
@@ -41,8 +43,9 @@ const CustomBottomNav = () => {
 };
 
 const Layout = () => {
+  const systemInfo = getSystemInfo() || {};
   return (
-    <App theme={getSystemInfo().zaloTheme}>
+    <App theme={systemInfo.zaloTheme || "light"}>
       <SnackbarProvider>
         <ZMPRouter>
           <AnimationRoutes>

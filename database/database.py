@@ -11,6 +11,7 @@ class User(db.Model):
     department = db.Column(db.String(100), nullable=True)
     zalo_user_id = db.Column(db.String(100), nullable=True) # ID người dùng Zalo
     phone_number = db.Column(db.String(20), nullable=True) # Số điện thoại dự phòng
+    pin = db.Column(db.String(10), nullable=True) # PIN bảo mật cho liên kết và admin
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):

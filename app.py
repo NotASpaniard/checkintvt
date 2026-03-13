@@ -50,6 +50,16 @@ def create_app():
     # Initialize Extensions
     db.init_app(app)
     
+    # Auto-migration: Thêm cột pin nếu chưa có cho Railway Postgres
+    with app.app_context():
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS pin VARCHAR(10)"))
+            db.session.commit()
+        except Exception as e:
+            print(f"[DATABASE] Auto-migration error (co the vi SQLite hoac da co cot): {e}")
+            db.session.rollback()
+
     # Register routes
     register_routes(app)
     
@@ -138,38 +148,48 @@ def register_routes(app):
             
         data = request.get_json(silent=True) or {}
         zalo_id = data.get('zalo_id')
-        name = data.get('name') # Hoac face_id
+        name = data.get('name')
+        pin = data.get('pin')
         
-        if not zalo_id or not name:
-            return jsonify({"error": "Missing data"}), 400
+        if not zalo_id or not name or not pin:
+            return jsonify({"error": "Thieu thong tin: Ten, ID hoac PIN"}), 400
             
-        # Tim user theo ten (chu thich: sau nay nen dung Staff ID/Face ID cho doc nhat)
-        user = User.query.filter(User.name.ilike(f"%{name}%")).first()
+        # Tim user theo ten va PIN
+        user = User.query.filter(User.name.ilike(f"%{name}%"), User.pin == str(pin)).first()
         if user:
             user.zalo_user_id = zalo_id
             db.session.commit()
             return jsonify({"status": "success", "message": f"Da lien ket Zalo cho {user.name}"})
         else:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "Ten hoac ma PIN khong chinh xac"}), 404
 
     @app.route('/api/user/add', methods=['POST'])
     def api_add_user():
-        """API de quan tri vien them hoac cap nhat ten nhan vien qua Face ID"""
+        """API de quan tri vien them hoac cap nhat ten nhan vien qua Face ID.
+        Yeu cau Admin PIN de bao mat."""
         from flask import request
         data = request.get_json(silent=True) or {}
         face_id = data.get('face_id')
         name = data.get('name')
+        pin = data.get('pin') # PIN cua nhan vien
+        admin_pin = data.get('admin_pin') # PIN cua admin de xac thuc quyen
         
+        # Kiem tra Admin PIN
+        expected_admin = os.getenv('ADMIN_PIN', '1234') # Mac dinh 1234 neu chua setup
+        if str(admin_pin) != str(expected_admin):
+            return jsonify({"error": "Sai ma PIN quan tri"}), 403
+
         if not face_id or not name:
             return jsonify({"error": "Thieu thong tin Face ID hoac Ten"}), 400
             
         user = User.query.filter_by(face_id=str(face_id)).first()
         if user:
             user.name = name
+            if pin: user.pin = str(pin)
             db.session.commit()
-            return jsonify({"status": "success", "message": f"Da cap nhat ten cho Face ID {face_id}"})
+            return jsonify({"status": "success", "message": f"Da cap nhat thong tin cho Face ID {face_id}"})
         else:
-            new_user = User(face_id=str(face_id), name=name)
+            new_user = User(face_id=str(face_id), name=name, pin=str(pin) if pin else "0000")
             db.session.add(new_user)
             db.session.commit()
             return jsonify({"status": "success", "message": f"Da them nhan vien moi: {name}"})

@@ -3,7 +3,7 @@ import { getUserInfo, requestSendNotification, getAccessToken } from "zmp-sdk";
 import { Box, Button, Icon, Page, Text, useSnackbar, Modal, Input } from "zmp-ui";
 
 // Dung link Ngrok de call API Backend tu ben ngoai
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://checkintvt-production.up.railway.app";
 
 function HomePage() {
   const [user, setUser] = useState(null);
@@ -12,8 +12,9 @@ function HomePage() {
   const [notiGranted, setNotiGranted] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [staffName, setStaffName] = useState("");
+  const [staffPin, setStaffPin] = useState("");
   const [isLinked, setIsLinked] = useState(false);
-  
+
   const { openSnackbar } = useSnackbar();
 
   // Dong ho so
@@ -60,17 +61,18 @@ function HomePage() {
   };
 
   const handleLinkAccount = async () => {
-    if (!staffName || !user?.id) return;
+    if (!staffName || !staffPin || !user?.id) return;
     try {
       const res = await fetch(`${API_BASE}/api/user/update-zalo-id`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({
           zalo_id: user.id,
-          name: staffName
+          name: staffName,
+          pin: staffPin
         })
       });
       const result = await res.json();
@@ -79,7 +81,7 @@ function HomePage() {
         setShowLinkModal(false);
         openSnackbar({ text: "Lien ket tai khoan thanh cong!", type: "success" });
       } else {
-        openSnackbar({ text: result.error || "Khong tim thay nhan vien", type: "error" });
+        openSnackbar({ text: result.error || "Sai ten hoac ma PIN", type: "error" });
       }
     } catch (err) {
       openSnackbar({ text: "Loi ket noi server", type: "error" });
@@ -100,13 +102,13 @@ function HomePage() {
     <Page className="page-home">
       <Box className="home-header">
         <Box className="user-info">
-          {user?.avatar ? <img src={user.avatar} alt="Avatar" className="user-avatar" /> : 
+          {user?.avatar ? <img src={user.avatar} alt="Avatar" className="user-avatar" /> :
             <Box className="user-avatar-placeholder"><Icon icon="zi-user" size={32} /></Box>
           }
           <Box>
             <Text className="greeting-text">Xin chao,</Text>
             <Text.Title className="user-name">{user?.name || "Nhan vien"}</Text.Title>
-            {isLinked && <Text style={{color: '#00ff88', fontSize: '12px'}}>✓ Da lien ket: {staffName}</Text>}
+            {isLinked && <Text style={{ color: '#00ff88', fontSize: '12px' }}>✓ Da lien ket: {staffName}</Text>}
           </Box>
         </Box>
       </Box>
@@ -154,6 +156,12 @@ function HomePage() {
             placeholder="Vi du: Nguyen Van A"
             value={staffName}
             onChange={(e) => setStaffName(e.target.value)}
+          />
+          <Input
+            placeholder="Ma PIN (Hoi Admin)"
+            type="password"
+            value={staffPin}
+            onChange={(e) => setStaffPin(e.target.value)}
           />
           <Button fullWidth onClick={handleLinkAccount}>Lien ket ngay</Button>
         </Box>
