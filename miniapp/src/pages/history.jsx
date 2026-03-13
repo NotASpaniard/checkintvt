@@ -20,15 +20,19 @@ function HistoryPage() {
       },
       fail: (err) => {
         console.error("getUserInfo error:", err);
-        fetchLogs(); // fallback
+        setLoading(false);
       }
     });
   }, []);
 
   const fetchLogs = async (zaloId) => {
+    if (!zaloId) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
     try {
-      let url = `${API_BASE}/api/logs/today`;
-      if (zaloId) url += `?zalo_id=${zaloId}`;
+      let url = `${API_BASE}/api/logs/today?zalo_id=${zaloId}`;
 
       const res = await fetch(url, {
         headers: { "ngrok-skip-browser-warning": "true" }

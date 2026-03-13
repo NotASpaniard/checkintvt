@@ -112,31 +112,40 @@ def register_routes(app):
         from flask import request
         
         zalo_id_filter = request.args.get('zalo_id')
+        print(f"[DEBUG] api_logs_today filter by zalo_id: '{zalo_id_filter}'")
+        
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
+        # Mac dinh neu goi tu Mini App (co zalo_id) ma zalo_id rong -> Tra ve list trong de bao mat
+        if zalo_id_filter == "":
+            return jsonify([])
+
         query = Log.query.filter(Log.timestamp >= today)
         
         if zalo_id_filter:
             # Chi lay logs cua user co zalo_id nay
-            query = query.join(User).filter(User.zalo_user_id == zalo_id_filter)
+            # Su dung join de loc chinh xac
+            logs = query.join(User).filter(User.zalo_user_id == zalo_id_filter).order_by(Log.timestamp.desc()).all()
+        else:
+            # Neu khong co filter (Dashboard Web goi) -> Lay het (hoac co the gioi han)
+            logs = query.order_by(Log.timestamp.desc()).all()
             
-        logs = query.order_by(Log.timestamp.desc()).all()
         result = []
         for log in logs:
             user_name = "Stranger"
             if log.user:
                 user_name = log.user.name
             elif log.face_id:
-                # Tim ten neu chua duoc gan user_id
                 u = User.query.filter_by(face_id=str(log.face_id)).first()
                 if u: user_name = u.name
+            
             result.append({
                 "id": log.id,
                 "name": user_name,
                 "face_id": log.face_id,
                 "time": log.checkin_time_str or log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 "image": log.image_path,
-                "image_data": log.image_data, # New Base64 support
+                "image_data": log.image_data,
                 "zalo_notified": log.zalo_notified
             })
         return jsonify(result)
