@@ -66,6 +66,10 @@ def create_app():
     return app
 
 
+# Biến toàn cục để theo dõi trạng thái từ xa
+last_heartbeat_time = None
+last_camera_ip = "192.168.100.99" # Mặc định hoặc lấy từ env
+
 def register_routes(app):
     """Register all application routes"""
     
@@ -197,21 +201,54 @@ def register_routes(app):
     
     @app.route('/api/status')
     def api_status():
-        """Get server and polling status"""
-        import device_poller as dp
+        """Get server and polling status based on last heartbeat"""
+        from datetime import datetime
+        global last_heartbeat_time, last_camera_ip
+        
+        is_active = False
+        if last_heartbeat_time:
+            diff = (datetime.now() - last_heartbeat_time).total_seconds()
+            if diff < 120: # Coi như kết nối nếu có tín hiệu trong 2 phút
+                is_active = True
+                
         return jsonify({
             "server": "running",
-            "polling": dp.is_polling,
-            "device_ip": dp.DEVICE_IP,
-            "poll_interval": dp.POLL_INTERVAL
+            "polling": is_active,
+            "device_ip": os.getenv('DEVICE_IP', last_camera_ip),
+            "last_seen": last_heartbeat_time.strftime("%H:%M:%S") if last_heartbeat_time else "Never"
         })
+
+    @app.route('/api/internal/heartbeat', methods=['POST'])
+    def internal_heartbeat():
+        """Nhan tin hieu song tu poller_agent.py"""
+        from flask import request
+        from datetime import datetime
+        global last_heartbeat_time, last_camera_ip
+        
+        # Kiem tra API Key
+        api_key = request.headers.get('X-Poller-Key', '').strip()
+        expected = os.getenv('POLLER_API_KEY', '').strip()
+        if not expected or api_key != expected:
+            return jsonify({"error": "Unauthorized"}), 401
+            
+        data = request.get_json(silent=True) or {}
+        if data.get('device_ip'):
+            last_camera_ip = data.get('device_ip')
+
+        last_heartbeat_time = datetime.now()
+        return jsonify({"status": "ok", "time": last_heartbeat_time.strftime("%H:%M:%S")})
 
     @app.route('/api/internal/checkin', methods=['POST'])
     def internal_checkin():
         """Nhan du lieu check-in tu poller_agent.py chay o may local.
         Bao mat bang POLLER_API_KEY trong .env."""
         from flask import request
+        from datetime import datetime
         import base64, re
+        global last_heartbeat_time
+        
+        # Cập nhật heartbeat mỗi khi có data gửi lên
+        last_heartbeat_time = datetime.now()
 
         # Kiem tra API Key
         api_key = request.headers.get('X-Poller-Key', '').strip()

@@ -164,15 +164,33 @@ def push_to_railway(details, face_id, image_data_b64):
         print(f"[-] Loi day len Cloud: {e}")
         return False
 
+def send_heartbeat():
+    headers = {"X-Poller-Key": POLLER_API_KEY}
+    try:
+        r = requests.post(f"{RAILWAY_URL}/api/internal/heartbeat", 
+                         json={"device_ip": DEVICE_IP},
+                         headers=headers, timeout=10)
+        return r.status_code == 200
+    except:
+        return False
+
 def main():
     print(f"[+] POLLER AGENT v1.1 (REVERTED)")
     print(f"[+] Camera: {DEVICE_IP}:{DEVICE_PORT} | Server: {RAILWAY_URL}")
     print("-" * 50)
     
     last_poll_time = None
+    last_heartbeat_sent = 0
     
     while True:
         try:
+            now_ts = time.time()
+            if now_ts - last_heartbeat_sent > 30: # Moi 30 giay gui 1 lan
+                if send_heartbeat():
+                    last_heartbeat_sent = now_ts
+                else:
+                    print("[-] Heartbeat failed.")
+
             now = datetime.now()
             # Quet lùi 30 phut de chac chan khong sot
             start = (now - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
