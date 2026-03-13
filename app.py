@@ -194,6 +194,7 @@ def register_routes(app):
             "poller_key_set": bool(key),
             "poller_key_len": len(key),
             "poller_key_preview": key[:5] + "..." if key else "(empty)",
+            "poller_key_repr": repr(key),
             "database_url_set": bool(db_url),
         })
 
@@ -205,9 +206,13 @@ def register_routes(app):
         import base64, re
 
         # Kiem tra API Key
-        api_key = request.headers.get('X-Poller-Key', '')
-        expected = os.getenv('POLLER_API_KEY', '')
+        api_key = request.headers.get('X-Poller-Key', '').strip()
+        expected = os.getenv('POLLER_API_KEY', '').strip()
         if not expected or api_key != expected:
+            # Debug log de chan doan
+            print(f"[AUTH DEBUG] received='{api_key}' (len={len(api_key)})")
+            print(f"[AUTH DEBUG] expected='{expected}' (len={len(expected)})")
+            print(f"[AUTH DEBUG] match={api_key == expected}, expected_empty={not expected}")
             return jsonify({"error": "Unauthorized"}), 401
 
         data = request.get_json(silent=True) or {}
