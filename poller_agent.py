@@ -175,7 +175,8 @@ def send_heartbeat():
         return False
 
 def main():
-    print(f"[+] POLLER AGENT v1.1 (REVERTED)")
+    print(f"[+] POLLER AGENT v1.3 (DATABASE IMAGE SUPPORT)")
+    print(f"[!] LUU Y: Vui long tat moi cua so Terminal khac dang chay ban cu.")
     print(f"[+] Camera: {DEVICE_IP}:{DEVICE_PORT} | Server: {RAILWAY_URL}")
     print("-" * 50)
     

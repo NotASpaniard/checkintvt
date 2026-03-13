@@ -272,6 +272,14 @@ def register_routes(app):
         # Chong trung lap
         existing = Log.query.filter_by(face_id=str(face_id_raw), checkin_time_str=snap_time).first()
         if existing:
+            # Neu da ton tai nhung chua co image_data -> Cap nhat bo sung
+            if not existing.image_data and image_b64:
+                try:
+                    existing.image_data = image_b64 if image_b64.startswith('data:') else f"data:image/jpeg;base64,{image_b64}"
+                    db.session.commit()
+                    return jsonify({"status": "ok", "message": "updated_image"})
+                except:
+                    db.session.rollback()
             return jsonify({"status": "ok", "message": "duplicate"})
 
         # Luu anh neu co
