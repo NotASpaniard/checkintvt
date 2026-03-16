@@ -56,6 +56,7 @@ def create_app():
             from sqlalchemy import text
             db.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS pin VARCHAR(10)"))
             db.session.execute(text("ALTER TABLE checkin_logs ADD COLUMN IF NOT EXISTS image_data TEXT"))
+            db.session.execute(text("ALTER TABLE checkin_logs ADD COLUMN IF NOT EXISTS name VARCHAR(100)"))
             db.session.commit()
         except Exception as e:
             print(f"[DATABASE] Auto-migration error (co the vi SQLite hoac da co cot): {e}")
@@ -132,17 +133,21 @@ def register_routes(app):
             # Tim tat ca cac record User lien quan den Zalo ID nay
             linked_users = User.query.filter_by(zalo_user_id=zalo_id_filter).all()
             if not linked_users:
+                print(f"[DEBUG] No users linked to Zalo ID: {zalo_id_filter}")
                 return jsonify([])
                 
             user_ids = [u.id for u in linked_users]
-            user_names = [u.name for u in linked_users]
+            user_names = [u.name for u in linked_users] # Day la danh sach ten chinh thuc tu DB
             
-            print(f"[DEBUG] Found linked user IDs: {user_ids}, names: {user_names} for Zalo ID: {zalo_id_filter}")
+            print(f"[DEBUG] api_logs_today - Linked User IDs: {user_ids}, Names: {user_names}")
             
-            # Tim log theo user_id HOAC theo name (phong truong hop thiet bi tao user moi cung ten nhung chua duoc update user_id)
-            query = query.filter((Log.user_id.in_(user_ids)) | (Log.name.in_(user_names)))
+            # Tim theo ID hoac theo ten (case-insensitive bang cach ilike tat ca names)
+            from sqlalchemy import or_
+            name_filters = [Log.name.ilike(f"%{name}%") for name in user_names]
+            query = query.filter(or_(Log.user_id.in_(user_ids), *name_filters))
             
-        logs = query.order_by(Log.timestamp.asc()).all() # Lay tu som den muon de tinh logic
+        logs = query.order_by(Log.timestamp.asc()).all() 
+# Lay tu som den muon de tinh logic
         
         # Logic phan loai: Di muon / Vao lam / Check-out
         # Luu tru trang thai theo face_id/name de xu ly nhieu nguoi neu can (mac du o day da filter theo zalo_id roi)
@@ -474,6 +479,7 @@ def register_routes(app):
         new_log = Log(
             user_id=user.id if user else None,
             face_id=str(face_id_raw),
+            name=name, # Luu ten truc tiep tu Device cung cap
             checkin_time_str=snap_time,
             image_path=image_path,
             image_data=image_data_stored,
@@ -482,6 +488,7 @@ def register_routes(app):
         )
         db.session.add(new_log)
         db.session.commit()
+        print(f"[DEBUG] Saved Log: ID={new_log.id}, Name='{name}', UserID={new_log.user_id}")
 
         # Gui Zalo
         from datetime import datetime as dt, timedelta as td

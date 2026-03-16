@@ -22,6 +22,7 @@ class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # Nullable for strangers
     face_id = db.Column(db.String(50), nullable=True) # ID received from event
+    name = db.Column(db.String(100), nullable=True) # Tên tại thời điểm điểm danh
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     checkin_time_str = db.Column(db.String(50), nullable=True) # Time string from device
     image_path = db.Column(db.String(200), nullable=True)
