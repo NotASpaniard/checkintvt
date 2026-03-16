@@ -354,9 +354,11 @@ def register_routes(app):
         db.session.commit()
 
         # Gui Zalo
+        from datetime import datetime as dt, timedelta as td
+        from services.zalo_service import zalo_service
+        
         if user and user.zalo_user_id:
-            from datetime import datetime as dt, timedelta as td
-            from services.zalo_service import zalo_service
+            # Ngươi dung hop le
             five_ago = dt.utcnow() - td(minutes=5)
             recent = Log.query.filter(
                 Log.user_id == user.id,
@@ -365,6 +367,38 @@ def register_routes(app):
             ).first()
             if not recent:
                 ok = zalo_service.send_all_notifications(user.zalo_user_id, user.name, snap_time)
+                if ok:
+                    new_log.zalo_notified = True
+                    db.session.commit()
+        elif not user or name == 'Stranger':
+            # Nguoi la ngan chan spam bang batching 3 phut (180 giay) tu DB de dong bo giua cac worker
+            three_mins_ago = dt.utcnow() - td(minutes=3)
+            recent_alert = Log.query.filter(
+                (Log.user_id == None) | (Log.name == 'Stranger'),
+                Log.zalo_notified == True,
+                Log.timestamp >= three_mins_ago
+            ).first()
+            
+            if not recent_alert: # Da qua 3 phut ke tu lan canh bao nguoi la truoc hoac chua bao gio canh bao
+                # Dem so nguoi la trong 3 phut qua
+                last_alert_time = dt.utcnow() - td(hours=24) # Default 24h neu chua tung alert
+                last_alert_log = Log.query.filter(
+                    (Log.user_id == None) | (Log.name == 'Stranger'),
+                    Log.zalo_notified == True
+                ).order_by(Log.timestamp.desc()).first()
+                
+                if last_alert_log:
+                    last_alert_time = last_alert_log.timestamp
+                    
+                strangers_count = Log.query.filter(
+                    (Log.user_id == None) | (Log.name == 'Stranger'),
+                    Log.timestamp > last_alert_time
+                ).count()
+                
+                strangers_count = max(1, strangers_count)
+                time_range_str = new_log.timestamp.strftime("%H:%M")
+                
+                ok = zalo_service.send_stranger_alert_miniapp(strangers_count, time_range_str)
                 if ok:
                     new_log.zalo_notified = True
                     db.session.commit()

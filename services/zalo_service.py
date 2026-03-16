@@ -13,6 +13,7 @@ class ZaloService:
         self.app_secret = os.getenv('ZALO_APP_SECRET', '')
         self.miniapp_id = os.getenv('ZALO_MINIAPP_ID', '')
         self.miniapp_api_key = os.getenv('ZALO_MINIAPP_API_KEY', '')
+        self.admin_zalo_id = os.getenv('ADMIN_ZALO_ID', '')
         self.env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
         
     def refresh_zalo_token(self):
@@ -135,6 +136,48 @@ class ZaloService:
                 return False
         except Exception as e:
             print(f"[MINIAPP] Loi ket noi khi gui Push Noti: {e}")
+            return False
+
+    def send_stranger_alert_miniapp(self, stranger_count, time_range_str):
+        """Gui Push Notification canh bao Nguoi La danh rieng cho Admin qua Mini App"""
+        if not self.admin_zalo_id:
+            print("[MINIAPP] Bo qua Stranger Alert: Chua cau hinh ADMIN_ZALO_ID trong .env")
+            return False
+            
+        if not self.miniapp_api_key:
+            print("[MINIAPP] Bo qua Stranger Alert: Chua cau hinh ZALO_MINIAPP_API_KEY")
+            return False
+
+        url = "https://openapi.mini.zalo.me/notification/template"
+        headers = {
+            "Content-Type": "application/json",
+            "X-Api-Key": self.miniapp_api_key,
+            "X-User-Id": str(self.admin_zalo_id),
+            "X-MiniApp-Id": self.miniapp_id
+        }
+        
+        payload = {
+            "templateId": "0",
+            "templateData": {
+                "title": f"⚠️ CANH BAO BAO MAT",
+                "content": f"Phat hien {stranger_count} nguoi la xuat hien luc {time_range_str}",
+                "actionTitle": "Mo Camera & Lich su",
+                "actionUrl": "/history"
+            }
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            result = response.json()
+            
+            if result.get("error") == 0 or response.status_code == 200:
+                print(f"[MINIAPP] Đã gui Stranger Alert ({stranger_count} nguoi) den Admin")
+                return True
+            else:
+                print(f"[MINIAPP] Stranger Alert thất bại: {result}")
+                return False
+        except Exception as e:
+            print(f"[MINIAPP] Loi ket noi khi gui Stranger Alert: {e}")
             return False
 
     def send_all_notifications(self, zalo_user_id, user_name, checkin_time_str):
