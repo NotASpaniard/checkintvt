@@ -8,6 +8,7 @@ function ProfilePage() {
     const [staffName, setStaffName] = useState("");
     const { openSnackbar } = useSnackbar();
     const navigate = useNavigate();
+    const API_BASE = import.meta.env.VITE_API_BASE || "https://checkintvt-production.up.railway.app";
 
     useEffect(() => {
         // Lay thong tin ngan gian tu Storage
@@ -25,19 +26,35 @@ function ProfilePage() {
         });
     }, []);
 
-    const handleUnlink = () => {
-        // Xoa sach du lieu lien ket trong may dien thoai
-        localStorage.removeItem("isLinked");
-        localStorage.removeItem("staffName");
+    const handleUnlink = async () => {
+        // Lay Zalo ID tu user hien tai
+        if (!user?.id) return;
 
-        openSnackbar({ text: "Đã hủy liên kết tài khoản thành công!", type: "success" });
+        try {
+            const res = await fetch(`${API_BASE}/api/user/unlink`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zalo_id: user.id })
+            });
+            const result = await res.json();
+            if (result.status === "success") {
+                // Xoa sach du lieu lien ket trong may dien thoai
+                localStorage.removeItem("isLinked");
+                localStorage.removeItem("staffName");
 
-        // Day nguoi dung ve trang chu de ho yeu cau dien thong tin lai
-        setTimeout(() => {
-            navigate("/");
-            // Force reload app on Home Page to trigger re-check
-            window.location.reload();
-        }, 1500);
+                openSnackbar({ text: "Đã hủy liên kết tài khoản thành công!", type: "success" });
+
+                // Day nguoi dung ve trang chu de ho yeu cau dien thong tin lai
+                setTimeout(() => {
+                    navigate("/");
+                    window.location.reload();
+                }, 1500);
+            } else {
+                openSnackbar({ text: "Lỗi hủy liên kết: " + result.error, type: "error" });
+            }
+        } catch (err) {
+            openSnackbar({ text: "Lỗi kết nối máy chủ", type: "error" });
+        }
     };
 
     return (
