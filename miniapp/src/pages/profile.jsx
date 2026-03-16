@@ -20,7 +20,7 @@ function ProfilePage() {
                 setUser(data.userInfo);
             },
             fail: (err) => {
-                console.error("Loi lay thong tin Zalo trong Profile:", err);
+                console.error("Lỗi lấy thông tin Zalo trong Profile:", err);
             }
         });
     }, []);
@@ -30,7 +30,7 @@ function ProfilePage() {
         localStorage.removeItem("isLinked");
         localStorage.removeItem("staffName");
 
-        openSnackbar({ text: "Da huy lien ket tai khoan thanh cong!", type: "success" });
+        openSnackbar({ text: "Đã hủy liên kết tài khoản thành công!", type: "success" });
 
         // Day nguoi dung ve trang chu de ho yeu cau dien thong tin lai
         setTimeout(() => {
@@ -50,20 +50,20 @@ function ProfilePage() {
                         <Icon icon="zi-user" style={{ color: "white", fontSize: "40px" }} />
                     </Box>
                 )}
-                <Text.Title style={{ color: "white", fontSize: "20px" }}>{user?.name || "Tai khoan Zalo"}</Text.Title>
-                <Text style={{ color: "#a0aec0", marginTop: "5px" }}>ID: {user?.id || "Chua cap quyen"}</Text>
+                <Text.Title style={{ color: "white", fontSize: "20px" }}>{user?.name || "Tài khoản Zalo"}</Text.Title>
+                <Text style={{ color: "#a0aec0", marginTop: "5px" }}>ID: {user?.id || "Chưa cấp quyền"}</Text>
             </Box>
 
             <Box p={4} m={4} style={{ background: "rgba(10, 11, 16, 0.8)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-                <Text style={{ color: "#D4AF37", fontSize: "16px", marginBottom: "15px", fontWeight: "bold" }}>Thong tin he thong</Text>
+                <Text style={{ color: "#D4AF37", fontSize: "16px", marginBottom: "15px", fontWeight: "bold" }}>Thông tin hệ thống</Text>
 
                 <Box flex flexDirection="row" justifyContent="space-between" alignItems="center" mb={4}>
-                    <Text style={{ color: "#a0aec0" }}>Trang thai</Text>
-                    <Text style={{ color: "#10b981", fontWeight: "bold" }}>{staffName ? "Da lien ket" : "Chua lien ket"}</Text>
+                    <Text style={{ color: "#a0aec0" }}>Trạng thái</Text>
+                    <Text style={{ color: "#10b981", fontWeight: "bold" }}>{staffName ? "Đã liên kết" : "Chưa liên kết"}</Text>
                 </Box>
 
                 <Box flex flexDirection="row" justifyContent="space-between" alignItems="center" mb={4}>
-                    <Text style={{ color: "#a0aec0" }}>Nhan vien</Text>
+                    <Text style={{ color: "#a0aec0" }}>Nhân viên</Text>
                     <Text style={{ color: "white", fontWeight: "bold" }}>{staffName || "---"}</Text>
                 </Box>
             </Box>
@@ -76,10 +76,10 @@ function ProfilePage() {
                         onClick={handleUnlink}
                         style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid #ef4444" }}
                     >
-                        Huy lien ket tai khoan
+                        Hủy liên kết tài khoản
                     </Button>
                     <Text style={{ color: "#64748b", fontSize: "12px", textAlign: "center", marginTop: "15px" }}>
-                        Hanh dong nay se yeu cau ban phai nhap lai Ma PIN trong lan kiem tra tiep theo.
+                        Hành động này sẽ yêu cầu bạn phải nhập lại Mã PIN trong lần kiểm tra tiếp theo.
                     </Text>
                 </Box>
             )}

@@ -112,12 +112,12 @@ function HomePage() {
         localStorage.setItem("isLinked", "true");
         localStorage.setItem("staffName", staffName);
         setShowLinkModal(false);
-        openSnackbar({ text: "Lien ket tai khoan thanh cong!", type: "success" });
+        openSnackbar({ text: "Liên kết tài khoản thành công!", type: "success" });
       } else {
-        openSnackbar({ text: result.error || "Sai ten hoac ma PIN", type: "error" });
+        openSnackbar({ text: result.error || "Sai tên hoặc mã PIN", type: "error" });
       }
     } catch (err) {
-      openSnackbar({ text: "Loi ket noi server", type: "error" });
+      openSnackbar({ text: "Lỗi kết nối server", type: "error" });
     }
   };
 
@@ -126,9 +126,9 @@ function HomePage() {
       success: () => {
         setNotiGranted(true);
         localStorage.setItem("notiGranted", "true");
-        openSnackbar({ text: "Da cap quyen thong bao!", type: "success" });
+        openSnackbar({ text: "Đã cấp quyền thông báo!", type: "success" });
       },
-      fail: (err) => openSnackbar({ text: "Loi cap quyen", type: "error" }),
+      fail: (err) => openSnackbar({ text: "Lỗi cấp quyền", type: "error" }),
     });
   };
 
@@ -140,9 +140,9 @@ function HomePage() {
             <Box className="user-avatar-placeholder"><Icon icon="zi-user" size={32} /></Box>
           }
           <Box>
-            <Text className="greeting-text">Xin chao,</Text>
-            <Text.Title className="user-name">{user?.name || "Nhan vien"}</Text.Title>
-            {isLinked && <Text style={{ color: '#00ff88', fontSize: '12px' }}>✓ Da lien ket: {staffName}</Text>}
+            <Text className="greeting-text">Xin chào,</Text>
+            <Text.Title className="user-name">{user?.name || "Nhân viên"}</Text.Title>
+            {isLinked && <Text style={{ color: '#00ff88', fontSize: '12px' }}>✓ Đã liên kết: {staffName}</Text>}
           </Box>
         </Box>
       </Box>
@@ -155,12 +155,12 @@ function HomePage() {
       <Box className="noti-section">
         {!notiGranted ? (
           <Button className="noti-btn" variant="primary" size="large" fullWidth onClick={handleRequestNoti} prefixIcon={<Icon icon="zi-notif" />}>
-            Cap quyen nhan thong bao
+            Cấp quyền nhận thông báo
           </Button>
         ) : (
           <Box className="noti-granted">
             <Icon icon="zi-check-circle" className="noti-icon-ok" />
-            <Text className="noti-granted-text">Da bat thong bao diem danh</Text>
+            <Text className="noti-granted-text">Đã bật thông báo điểm danh</Text>
           </Box>
         )}
       </Box>
@@ -168,36 +168,36 @@ function HomePage() {
       <Box className="quick-info">
         <Box className="info-card" onClick={() => !isLinked && setShowLinkModal(true)}>
           <Icon icon="zi-user-circle" size={28} className="info-icon" />
-          <Text className="info-label">Tai khoan</Text>
-          <Text className="info-value">{isLinked ? "Da lien ket" : "Chua lien ket"}</Text>
+          <Text className="info-label">Tài khoản</Text>
+          <Text className="info-value">{isLinked ? "Đã liên kết" : "Chưa liên kết"}</Text>
         </Box>
         <Box className="info-card">
           <Icon icon="zi-notif" size={28} className="info-icon" />
-          <Text className="info-label">Thong bao</Text>
-          <Text className="info-value">{notiGranted ? "Da bat" : "Chua bat"}</Text>
+          <Text className="info-label">Thông báo</Text>
+          <Text className="info-value">{notiGranted ? "Đã bật" : "Chưa bật"}</Text>
         </Box>
       </Box>
 
       <Modal
         visible={showLinkModal}
-        title="Lien ket nhan vien"
+        title="Liên kết nhân viên"
         onClose={() => setShowLinkModal(false)}
         verticalActions
       >
         <Box className="space-y-4">
-          <Text>Nhap ho ten nhan vien de nhan thong bao diem danh:</Text>
+          <Text>Nhập họ tên nhân viên để nhận thông báo điểm danh:</Text>
           <Input
-            placeholder="Vi du: Nguyen Van A"
+            placeholder="Ví dụ: Nguyễn Văn A"
             value={staffName}
             onChange={(e) => setStaffName(e.target.value)}
           />
           <Input
-            placeholder="Ma PIN (Hoi Admin)"
+            placeholder="Mã PIN (Hỏi Admin)"
             type="password"
             value={staffPin}
             onChange={(e) => setStaffPin(e.target.value)}
           />
-          <Button fullWidth onClick={handleLinkAccount}>Lien ket ngay</Button>
+          <Button fullWidth onClick={handleLinkAccount}>Liên kết ngay</Button>
         </Box>
       </Modal>
     </Page>

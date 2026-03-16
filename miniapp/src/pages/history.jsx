@@ -60,10 +60,10 @@ function HistoryPage() {
     <Page className="page-history">
       {/* Header */}
       <Box className="history-header">
-        <Text.Title className="history-title">Lich su diem danh</Text.Title>
+        <Text.Title className="history-title">Lịch sử điểm danh</Text.Title>
         <Box className="today-badge">
           <Text className="today-count">{todayCount}</Text>
-          <Text className="today-label">Hom nay</Text>
+          <Text className="today-label">Hôm nay</Text>
         </Box>
       </Box>
 
@@ -72,13 +72,13 @@ function HistoryPage() {
         {loading ? (
           <Box className="loading-state">
             <Spinner />
-            <Text className="loading-text">Dang tai du lieu...</Text>
+            <Text className="loading-text">Đang tải dữ liệu...</Text>
           </Box>
         ) : logs.length === 0 ? (
           <Box className="empty-state">
             <Icon icon="zi-clock-1" size={64} className="empty-icon" />
-            <Text className="empty-text">Chua co ban ghi diem danh nao hom nay</Text>
-            <Text className="empty-sub">Hay ra truoc thiet bi de check-in</Text>
+            <Text className="empty-text">Chưa có bản ghi điểm danh nào hôm nay</Text>
+            <Text className="empty-sub">Hãy ra trước thiết bị để check-in</Text>
           </Box>
         ) : (
           logs.map((log) => (
