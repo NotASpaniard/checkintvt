@@ -100,11 +100,26 @@ function HistoryPage() {
                 )}
               </Box>
 
-              <Box className="log-detail">
-                <Text className="log-name">{log.name}</Text>
-                <Box className="log-time-row">
+              <Box className="log-main-info">
+                <Text className="log-user-name">{log.name}</Text>
+                <Box flex flexDirection="row" alignItems="center">
                   <Icon icon="zi-clock-1" size={14} />
                   <Text className="log-time">{log.time}</Text>
+                  {log.status && (
+                    <Text
+                      style={{
+                        marginLeft: '8px',
+                        fontSize: '12px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: log.status === "Đi muộn" ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)",
+                        color: log.status === "Đi muộn" ? "#ef4444" : "#10b981",
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {log.status}
+                    </Text>
+                  )}
                 </Box>
               </Box>
 

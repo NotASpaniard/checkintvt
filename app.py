@@ -129,32 +129,55 @@ def register_routes(app):
         query = Log.query.filter(Log.timestamp >= utc_today_start)
         
         if zalo_id_filter:
-            # Chi lay logs cua cac user co zalo_id nay (ket hop IN de lay het cac instance cung zalo_id)
-            user_ids = [u.id for u in User.query.filter_by(zalo_user_id=zalo_id_filter).all()]
-            print(f"[DEBUG] User IDs found for Zalo ID {zalo_id_filter}: {user_ids}")
-            if not user_ids:
+            # Tim tat ca cac record User lien quan den Zalo ID nay
+            linked_users = User.query.filter_by(zalo_user_id=zalo_id_filter).all()
+            if not linked_users:
                 return jsonify([])
-            query = query.filter(Log.user_id.in_(user_ids))
+                
+            user_ids = [u.id for u in linked_users]
+            user_names = [u.name for u in linked_users]
             
-        logs = query.order_by(Log.timestamp.desc()).all()
+            print(f"[DEBUG] Found linked user IDs: {user_ids}, names: {user_names} for Zalo ID: {zalo_id_filter}")
+            
+            # Tim log theo user_id HOAC theo name (phong truong hop thiet bi tao user moi cung ten nhung chua duoc update user_id)
+            query = query.filter((Log.user_id.in_(user_ids)) | (Log.name.in_(user_names)))
+            
+        logs = query.order_by(Log.timestamp.asc()).all() # Lay tu som den muon de tinh logic
+        
+        # Logic phan loai: Di muon / Vao lam / Check-out
+        # Luu tru trang thai theo face_id/name de xu ly nhieu nguoi neu can (mac du o day da filter theo zalo_id roi)
+        processed_status = {} # {user_name: has_first_checkin}
         
         result = []
         for log in logs:
-            user_name = "Stranger"
-            if log.user:
-                user_name = log.user.name
-            elif log.face_id:
-                u = User.query.filter_by(face_id=str(log.face_id)).first()
-                if u: user_name = u.name
+            vn_time = log.timestamp + timedelta(hours=7)
+            user_name = log.name or "Stranger"
+            if log.user: user_name = log.user.name
             
+            status_label = ""
+            if user_name not in processed_status:
+                # Day la ban ghi dau tien trong ngay cua ho
+                # Quy dinh gio vao lam: 08:30
+                if vn_time.hour > 8 or (vn_time.hour == 8 and vn_time.minute > 30):
+                    status_label = "Đi muộn"
+                else:
+                    status_label = "Vào làm"
+                processed_status[user_name] = True
+            else:
+                status_label = "Check-out"
+
             result.append({
                 "id": log.id,
                 "name": user_name,
                 "face_id": log.face_id,
-                "time": log.checkin_time_str or log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "time": vn_time.strftime("%H:%M:%S"),
                 "has_image": bool(log.image_data or log.image_path),
-                "zalo_notified": log.zalo_notified
+                "zalo_notified": log.zalo_notified,
+                "status": status_label
             })
+            
+        # Dao nguoc lai de hien cai moi nhat len dau
+        result.reverse()
         return jsonify(result)
 
     @app.route('/api/logs/<int:log_id>/image')
