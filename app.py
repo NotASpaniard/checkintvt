@@ -185,6 +185,26 @@ def register_routes(app):
         result.reverse()
         return jsonify(result)
 
+    @app.route('/api/debug/recent_logs')
+    def api_debug_recent_logs():
+        """Debug endpoint to see last 10 logs in the entire DB"""
+        from datetime import datetime, timedelta
+        logs = Log.query.order_by(Log.timestamp.desc()).limit(20).all()
+        result = []
+        for log in logs:
+            vn_time = log.timestamp + timedelta(hours=7)
+            result.append({
+                "id": log.id,
+                "name_log": log.name,
+                "user_id": log.user_id,
+                "time_vn": vn_time.strftime("%H:%M:%S"),
+                "raw_face_id": log.face_id
+            })
+        return jsonify({
+            "server_time_utc": datetime.utcnow().strftime("%H:%M:%S"),
+            "recent_logs": result
+        })
+
     @app.route('/api/logs/<int:log_id>/image')
     def api_log_image(log_id):
         """Serve direct image from base64 DB data or file path"""
