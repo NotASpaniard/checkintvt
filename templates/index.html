@@ -547,9 +547,9 @@
                 container.innerHTML = logs.map((log, i) => {
                     const isNew = log.id > lastLogId && i === 0;
                     const initial = log.name.charAt(0).toUpperCase();
-                    const avatarHtml = log.image_data
-                        ? `<img src="${log.image_data}" alt="${log.name}" onerror="this.src='https://ui-avatars.com/api/?name=${log.name}&background=random'">`
-                        : (log.image ? `<img src="/${log.image}" alt="${log.name}">` : initial);
+                    const avatarHtml = log.has_image
+                        ? `<img src="/api/logs/${log.id}/image" alt="${log.name}" onerror="this.src='https://ui-avatars.com/api/?name=${log.name}&background=random'">`
+                        : initial;
 
                     return `
                         <div class="log-item ${isNew ? 'new' : ''}">

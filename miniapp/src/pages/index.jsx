@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getUserInfo, requestSendNotification, getAccessToken } from "zmp-sdk";
+import { getUserInfo, login, requestSendNotification } from "zmp-sdk";
 import { Box, Button, Icon, Page, Text, useSnackbar, Modal, Input } from "zmp-ui";
 
 // Dung link Ngrok de call API Backend tu ben ngoai
@@ -44,13 +44,26 @@ function HomePage() {
 
   // Lay thong tin user Zalo va kiem tra trang thai lien ket
   useEffect(() => {
-    getUserInfo({
-      success: (data) => {
-        setUser(data.userInfo);
-        checkLinkingStatus(data.userInfo.id);
-      },
-      fail: (err) => console.log("getUserInfo error:", err),
-    });
+    const fetchUserData = () => {
+      login({
+        success: () => {
+          getUserInfo({
+            success: (data) => {
+              setUser(data.userInfo);
+              checkLinkingStatus(data.userInfo.id);
+            },
+            fail: (err) => {
+              console.log("getUserInfo error:", err);
+              openSnackbar({ text: "Chưa được cấp quyền lấy thông tin Zalo", type: "error" });
+            },
+          });
+        },
+        fail: (err) => {
+          console.log("Login fail:", err);
+        }
+      });
+    };
+    fetchUserData();
   }, []);
 
   const checkLinkingStatus = async (zalo_id) => {
@@ -72,7 +85,14 @@ function HomePage() {
   };
 
   const handleLinkAccount = async () => {
-    if (!staffName || !staffPin || !user?.id) return;
+    if (!user?.id) {
+      openSnackbar({ text: "Lỗi: Không lấy được Zalo ID. Vui lòng cho phép ứng dụng truy cập thông tin của bạn.", type: "error" });
+      return;
+    }
+    if (!staffName || !staffPin) {
+      openSnackbar({ text: "Vui lòng nhập đầy đủ Họ tên và Mã PIN", type: "warning" });
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/user/update-zalo-id`, {
         method: 'POST',

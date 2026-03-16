@@ -144,11 +144,39 @@ def register_routes(app):
                 "name": user_name,
                 "face_id": log.face_id,
                 "time": log.checkin_time_str or log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                "image": log.image_path,
-                "image_data": log.image_data,
+                "has_image": bool(log.image_data or log.image_path),
                 "zalo_notified": log.zalo_notified
             })
         return jsonify(result)
+
+    @app.route('/api/logs/<int:log_id>/image')
+    def api_log_image(log_id):
+        """Serve direct image from base64 DB data or file path"""
+        from flask import send_file
+        import base64
+        from io import BytesIO
+        import os
+        
+        log = Log.query.get(log_id)
+        if not log:
+            return "Not found", 404
+            
+        if log.image_data:
+            try:
+                # Remove data:image/jpeg;base64, if exists
+                if "," in log.image_data:
+                    _, encoded = log.image_data.split(",", 1)
+                else:
+                    encoded = log.image_data
+                image_bytes = base64.b64decode(encoded)
+                return send_file(BytesIO(image_bytes), mimetype='image/jpeg', max_age=86400) # Cache 1 ngay
+            except Exception as e:
+                print(f"[!] Loi decode anh base64 cua log_id {log_id}: {e}")
+                
+        if log.image_path and os.path.exists(log.image_path):
+            return send_file(log.image_path, max_age=86400)
+            
+        return "No image", 404
     
     @app.route('/api/users')
     def api_users():
