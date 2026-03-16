@@ -20,11 +20,10 @@ function HomePage() {
   // Khoi phuc trang thai tu Storage khi moi vao
   useEffect(() => {
     const savedNoti = localStorage.getItem("notiGranted");
-    const savedLinked = localStorage.getItem("isLinked");
     const savedName = localStorage.getItem("staffName");
 
     if (savedNoti === "true") setNotiGranted(true);
-    if (savedLinked === "true") setIsLinked(true);
+    // Khong setIsLinked o day de tranh desync voi server, cho ket qua tu checkLinkingStatus
     if (savedName) setStaffName(savedName);
   }, []);
 
@@ -71,6 +70,8 @@ function HomePage() {
       const res = await fetch(`${API_BASE}/api/users`, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
+      if (!res.ok) throw new Error("Server response not ok");
+
       const users = await res.json();
       const matched = users.find(u => u.zalo_id === zalo_id);
       if (matched) {
@@ -87,6 +88,7 @@ function HomePage() {
       }
     } catch (err) {
       console.error("Check link error:", err);
+      // Neu loi ket noi, tam thoi giu trang thai hien tai hoac bao loi
     }
   };
 
@@ -119,6 +121,8 @@ function HomePage() {
         localStorage.setItem("staffName", staffName);
         setShowLinkModal(false);
         openSnackbar({ text: "Liên kết tài khoản thành công!", type: "success" });
+        // Sau khi lien ket, force check lai cho chac
+        checkLinkingStatus(user.id);
       } else {
         openSnackbar({ text: result.error || "Sai tên hoặc mã PIN", type: "error" });
       }

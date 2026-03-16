@@ -199,13 +199,16 @@ def main():
             
             events = search_snap_faces(start, end)
             if events:
-                print(f"[*] Found {len(events)} events in last 30m.")
+                print(f"[*] Tim thay {len(events)} su kien trong [ {start} -> {end} ]")
                 for snap_time, face_id in events:
                     details = get_snap_face_details(snap_time, face_id)
                     if details:
+                        # In chi tiet de debug tren terminal nguoi dung
+                        print(f"   > Dang day: {details['name']} | Time: {details['snap_time']} | Sim: {details['similarity']}%")
                         push_to_railway(details, face_id, details.get("image_data"))
             else:
-                print(f"[.] No events found ({start} -> {end})")
+                # In ra trang thai quet de nguoi dung biet poller van dang chay
+                print(f"[.] Dang quet {DEVICE_IP}... (Chua co kien moi trong khoang {start} -> {end})")
                 
         except KeyboardInterrupt: break
         except Exception as e: print(f"[-] Error: {e}")
