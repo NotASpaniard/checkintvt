@@ -76,7 +76,13 @@ function HomePage() {
       if (matched) {
         setIsLinked(true);
         setStaffName(matched.name);
+        localStorage.setItem("isLinked", "true");
+        localStorage.setItem("staffName", matched.name);
       } else {
+        setIsLinked(false);
+        setStaffName("");
+        localStorage.removeItem("isLinked");
+        localStorage.removeItem("staffName");
         setShowLinkModal(true);
       }
     } catch (err) {

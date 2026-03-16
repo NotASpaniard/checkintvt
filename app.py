@@ -129,13 +129,15 @@ def register_routes(app):
         query = Log.query.filter(Log.timestamp >= utc_today_start)
         
         if zalo_id_filter:
-            # Chi lay logs cua user co zalo_id nay
-            # Su dung join de loc chinh xac
-            logs = query.join(User).filter(User.zalo_user_id == zalo_id_filter).order_by(Log.timestamp.desc()).all()
-        else:
-            # Neu khong co filter (Dashboard Web goi) -> Lay het (hoac co the gioi han)
-            logs = query.order_by(Log.timestamp.desc()).all()
+            # Chi lay logs cua cac user co zalo_id nay (ket hop IN de lay het cac instance cung zalo_id)
+            user_ids = [u.id for u in User.query.filter_by(zalo_user_id=zalo_id_filter).all()]
+            print(f"[DEBUG] User IDs found for Zalo ID {zalo_id_filter}: {user_ids}")
+            if not user_ids:
+                return jsonify([])
+            query = query.filter(Log.user_id.in_(user_ids))
             
+        logs = query.order_by(Log.timestamp.desc()).all()
+        
         result = []
         for log in logs:
             user_name = "Stranger"
@@ -201,43 +203,47 @@ def register_routes(app):
 
     @app.route('/api/user/unlink', methods=['POST'])
     def api_user_unlink():
-        """Unlink Zalo ID from a user"""
+        """Unlink Zalo ID from ALL users that have it"""
         from flask import request
         data = request.json
         zalo_id = data.get('zalo_id')
         if not zalo_id:
             return jsonify({"status": "error", "error": "Missing zalo_id"}), 400
             
-        user = User.query.filter_by(zalo_user_id=zalo_id).first()
-        if user:
-            try:
-                user.zalo_user_id = None
-                db.session.commit()
-                return jsonify({"status": "success"})
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({"status": "error", "error": str(e)}), 500
-        return jsonify({"status": "error", "error": "User not found"}), 404
+        try:
+            # Xoa zalo_id khoi TOAN BO cac record co ID nay (phong do trung lap)
+            affected = User.query.filter_by(zalo_user_id=zalo_id).update({User.zalo_user_id: None})
+            db.session.commit()
+            print(f"[DEBUG] Unlinked Zalo ID {zalo_id}, records affected: {affected}")
+            return jsonify({"status": "success", "affected": affected})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"status": "error", "error": str(e)}), 500
 
     @app.route('/api/user/stats')
     def api_user_stats():
-        """Get check-in stats for a specific user"""
+        """Get check-in stats for all user instances linked to this Zalo ID"""
         from flask import request
         zalo_id = request.args.get('zalo_id')
         if not zalo_id:
             return jsonify({"error": "Missing zalo_id"}), 400
             
-        user = User.query.filter_by(zalo_user_id=zalo_id).first()
-        if not user:
-            return jsonify({"error": "User not found"}), 404
+        # Lay tat ca User IDs lien ket voi Zalo ID nay
+        users_linked = User.query.filter_by(zalo_user_id=zalo_id).all()
+        if not users_linked:
+            return jsonify({
+                "totalDays": 26,
+                "presentDays": 0,
+                "lateDays": 0,
+                "onTimeRate": 100
+            })
             
+        user_ids = [u.id for u in users_linked]
         from datetime import datetime, timedelta
         now = datetime.utcnow() + timedelta(hours=7)
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=7)
         
-        # Dem so ngay di lam trong thang
-        # Lay tat ca logs trong thang nay cua user
-        logs = Log.query.filter(Log.user_id == user.id, Log.timestamp >= start_of_month).all()
+        logs = Log.query.filter(Log.user_id.in_(user_ids), Log.timestamp >= start_of_month).all()
         
         # Lay cac ngay duy nhat
         days_present = set()
@@ -427,13 +433,15 @@ def register_routes(app):
         # Tim hoac tao user
         user = None
         if person_id:
-            user = User.query.filter_by(face_id=str(person_id)).first()
+            # Uu tien tim bang face_id (va phai la instance da co zalo_id neu co the)
+            user = User.query.filter_by(face_id=str(person_id)).order_by(User.zalo_user_id.desc()).first()
             if not user:
                 user = User(face_id=str(person_id), name=name)
                 db.session.add(user)
                 db.session.flush()
         elif name and name != 'Stranger':
-            user = User.query.filter(User.name.ilike(f"%{name}%")).first()
+            # Uu tien tim instance co zalo_id de logs duoc gan vao dung tai khoan dang dung app
+            user = User.query.filter(User.name.ilike(f"%{name}%")).order_by(User.zalo_user_id.desc()).first()
             if not user:
                 user = User(face_id=str(face_id_raw), name=name)
                 db.session.add(user)
