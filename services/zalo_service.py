@@ -180,33 +180,56 @@ class ZaloService:
             print(f"[MINIAPP] Loi ket noi khi gui Stranger Alert: {e}")
             return False
 
-    def send_all_notifications(self, zalo_user_id, user_name, checkin_time_str):
-        """Phuong an 3: Gui ca OA Message + Mini App Push Notification song song"""
+    def send_custom_notification(self, zalo_user_id, title, content):
+        """Gui thong bao voi tieu de va noi dung tuy chinh (Kenh doi OA + MiniApp)"""
         oa_ok = False
         miniapp_ok = False
         
-        # Kenh 1: OA Message (tin nhan vao hop Zalo)
+        # Kenh 1: OA Message
         try:
-            oa_ok = self.send_checkin_notification(zalo_user_id, user_name, checkin_time_str)
+            url = "https://openapi.zalo.me/v3.0/oa/message/cs"
+            headers = {
+                "access_token": self.access_token,
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "recipient": {"user_id": zalo_user_id},
+                "message": {"text": f"{title}\n{content}"}
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            oa_ok = (response.json().get("error") == 0)
         except Exception as e:
-            print(f"[ZALO] Loi OA Message: {e}")
-        
-        # Kenh 2: Mini App Push Notification (nay len man hinh khoa)
+            print(f"[ZALO] Loi gui OA Custom: {e}")
+            
+        # Kenh 2: Mini App Push
         try:
-            miniapp_ok = self.send_miniapp_notification(zalo_user_id, user_name, checkin_time_str)
+            url = "https://openapi.mini.zalo.me/notification/template"
+            headers = {
+                "Content-Type": "application/json",
+                "X-Api-Key": self.miniapp_api_key,
+                "X-User-Id": str(zalo_user_id),
+                "X-MiniApp-Id": self.miniapp_id
+            }
+            payload = {
+                "templateId": "0",
+                "templateData": {
+                    "title": title,
+                    "content": content,
+                    "actionTitle": "Xem lịch sử",
+                    "actionUrl": "/history"
+                }
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            miniapp_ok = (response.json().get("error") == 0 or response.status_code == 200)
         except Exception as e:
-            print(f"[MINIAPP] Loi Push Noti: {e}")
-        
-        if oa_ok or miniapp_ok:
-            channels = []
-            if oa_ok:
-                channels.append("OA")
-            if miniapp_ok:
-                channels.append("MiniApp")
-            print(f"[THONG BAO] Da gui thanh cong qua: {' + '.join(channels)} cho {user_name}")
-            return True
-        else:
-            print(f"[THONG BAO] Ca 2 kenh deu that bai cho {user_name}")
-            return False
+            print(f"[MINIAPP] Loi gui Push Custom: {e}")
+            
+        return oa_ok or miniapp_ok
+
+    def send_all_notifications(self, zalo_user_id, user_name, checkin_time_str):
+        """Phuong an mac dinh (Backward compatibility)"""
+        title = "🔔 Thông báo điểm danh"
+        content = f"Chào {user_name}, hệ thống ghi nhận bạn đã điểm danh lúc {checkin_time_str}."
+        return self.send_custom_notification(zalo_user_id, title, content)
 
 zalo_service = ZaloService()

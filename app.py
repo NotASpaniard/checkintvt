@@ -515,19 +515,50 @@ def register_routes(app):
         from services.zalo_service import zalo_service
         
         if user and user.zalo_user_id:
-            # Ap dung cooldown ngan cho tat ca moi nguoi (ke ca nhan vien va admin)
-            # Mac dinh 5 phut de tranh spam khi mot nguoi di qua camera nhieu lan
-            cooldown_mins = 5
-            cooldown_time = dt.utcnow() - td(minutes=cooldown_mins)
+            # Logic: Toi da 2 thong bao/ngay (1 vao, 1 ra)
+            # Lay gio VN hien tai de so sanh
+            vn_now = dt.utcnow() + td(hours=7)
+            vn_today_start = vn_now.replace(hour=0, minute=0, second=0, microsecond=0)
+            utc_today_start = vn_today_start - td(hours=7)
             
-            recent = Log.query.filter(
+            # Dem so thong bao da gui hom nay cho user nay
+            notified_logs_today = Log.query.filter(
                 Log.user_id == user.id,
                 Log.zalo_notified == True,
-                Log.timestamp >= cooldown_time
-            ).first()
+                Log.timestamp >= utc_today_start
+            ).count()
             
-            if not recent:
-                ok = zalo_service.send_all_notifications(user.zalo_user_id, user.name, snap_time)
+            # Cac moc thoi gian (mac dinh, sau nay co the cau hinh qua env)
+            checkin_deadline = os.getenv('CHECKIN_DEADLINE', '08:30')
+            checkout_start = os.getenv('CHECKOUT_START_TIME', '16:30') # Sau gio nay moi tinh la thong bao "Ve"
+            checkout_deadline = os.getenv('CHECKOUT_DEADLINE', '17:30') # Truoc gio nay la ve som
+            
+            current_time_str = vn_now.strftime("%H:%M")
+            should_notify = False
+            noti_title = ""
+            noti_content = ""
+            
+            if notified_logs_today == 0:
+                # THONG BAO 1: VAO LAM
+                is_late = current_time_str > checkin_deadline
+                icon = "❌" if is_late else "✅"
+                stt_text = "đi muộn" if is_late else "đúng giờ"
+                noti_title = f"{icon} Điểm danh {stt_text}"
+                noti_content = f"Chào {user.name}, bạn đã vào làm {stt_text} lúc {current_time_str}."
+                should_notify = True
+                
+            elif notified_logs_today == 1:
+                # THONG BAO 2: RA VE (Chi gui neu quet sau checkout_start)
+                if current_time_str >= checkout_start:
+                    is_early = current_time_str < checkout_deadline
+                    icon = "⚠️" if is_early else "✅"
+                    stt_text = "về sớm" if is_early else "đã về"
+                    noti_title = f"{icon} Xác nhận {stt_text}"
+                    noti_content = f"Chào {user.name}, bạn đã {stt_text} lúc {current_time_str}."
+                    should_notify = True
+            
+            if should_notify:
+                ok = zalo_service.send_custom_notification(user.zalo_user_id, noti_title, noti_content)
                 if ok:
                     new_log.zalo_notified = True
                     db.session.commit()
