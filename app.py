@@ -515,13 +515,17 @@ def register_routes(app):
         from services.zalo_service import zalo_service
         
         if user and user.zalo_user_id:
-            # Ngươi dung hop le
-            five_ago = dt.utcnow() - td(minutes=5)
+            # Ap dung cooldown ngan cho tat ca moi nguoi (ke ca nhan vien va admin)
+            # Mac dinh 5 phut de tranh spam khi mot nguoi di qua camera nhieu lan
+            cooldown_mins = 5
+            cooldown_time = dt.utcnow() - td(minutes=cooldown_mins)
+            
             recent = Log.query.filter(
                 Log.user_id == user.id,
                 Log.zalo_notified == True,
-                Log.timestamp >= five_ago
+                Log.timestamp >= cooldown_time
             ).first()
+            
             if not recent:
                 ok = zalo_service.send_all_notifications(user.zalo_user_id, user.name, snap_time)
                 if ok:
