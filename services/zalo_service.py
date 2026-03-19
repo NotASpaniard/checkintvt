@@ -159,9 +159,9 @@ class ZaloService:
         payload = {
             "templateId": "0",
             "templateData": {
-                "title": f"⚠️ CANH BAO BAO MAT",
-                "content": f"Phat hien {stranger_count} nguoi la xuat hien luc {time_range_str}",
-                "actionTitle": "Mo Camera & Lich su",
+                "title": f"[CẢNH BÁO BẢO MẬT]",
+                "content": f"Phát hiện {stranger_count} người lạ xuất hiện lúc {time_range_str}",
+                "actionTitle": "Mở Camera & Lịch sử",
                 "actionUrl": "/history"
             }
         }
@@ -228,8 +228,8 @@ class ZaloService:
 
     def send_all_notifications(self, zalo_user_id, user_name, checkin_time_str):
         """Phuong an mac dinh (Backward compatibility)"""
-        title = "🔔 Thông báo điểm danh"
-        content = f"Chào {user_name}, hệ thống ghi nhận bạn đã điểm danh lúc {checkin_time_str}."
+        title = "[THÔNG BÁO]"
+        content = f"Ghi nhận {user_name} đã điểm danh lúc {checkin_time_str}."
         return self.send_custom_notification(zalo_user_id, title, content)
 
 zalo_service = ZaloService()

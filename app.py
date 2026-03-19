@@ -541,20 +541,19 @@ def register_routes(app):
             if notified_logs_today == 0:
                 # THONG BAO 1: VAO LAM
                 is_late = current_time_str > checkin_deadline
-                icon = "❌" if is_late else "✅"
-                stt_text = "đi muộn" if is_late else "đúng giờ"
-                noti_title = f"{icon} Điểm danh {stt_text}"
-                noti_content = f"Chào {user.name}, bạn đã vào làm {stt_text} lúc {current_time_str}."
+                prefix = "[ĐI MUỘN]" if is_late else "[ĐÚNG GIỜ]"
+                noti_title = f"{prefix} Điểm danh"
+                noti_content = f"Ghi nhận {user.name} vào làm lúc {current_time_str}."
                 should_notify = True
                 
             elif notified_logs_today == 1:
                 # THONG BAO 2: RA VE (Chi gui neu quet sau checkout_start)
                 if current_time_str >= checkout_start:
                     is_early = current_time_str < checkout_deadline
-                    icon = "⚠️" if is_early else "✅"
-                    stt_text = "về sớm" if is_early else "đã về"
-                    noti_title = f"{icon} Xác nhận {stt_text}"
-                    noti_content = f"Chào {user.name}, bạn đã {stt_text} lúc {current_time_str}."
+                    prefix = "[VỀ SỚM]" if is_early else "[XÁC NHẬN]"
+                    status_text = "về sớm" if is_early else "ra về"
+                    noti_title = f"{prefix} Tan sở"
+                    noti_content = f"Ghi nhận {user.name} {status_text} lúc {current_time_str}."
                     should_notify = True
             
             if should_notify:
