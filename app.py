@@ -557,10 +557,15 @@ def register_routes(app):
                     should_notify = True
             
             if should_notify:
+                print(f"[ZALO_DEBUG] Bat dau gui thong bao cho {user.name} (ZaloID: {user.zalo_user_id})")
+                print(f"[ZALO_DEBUG] Trang thai: {noti_title}")
                 ok = zalo_service.send_custom_notification(user.zalo_user_id, noti_title, noti_content)
+                print(f"[ZALO_DEBUG] Ket qua gui: {'THANH CONG' if ok else 'THAT BAI'}")
                 if ok:
                     new_log.zalo_notified = True
                     db.session.commit()
+            else:
+                print(f"[ZALO_DEBUG] Bo qua thong bao cho {user.name}. Ly do: notified_logs={notified_logs_today}, current_time={current_time_str}")
         elif not user or name == 'Stranger':
             # Nguoi la ngan chan spam bang batching 3 phut (180 giay) tu DB de dong bo giua cac worker
             three_mins_ago = dt.utcnow() - td(minutes=3)
