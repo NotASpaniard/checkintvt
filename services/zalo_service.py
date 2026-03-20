@@ -109,7 +109,7 @@ class ZaloService:
         url = "https://openapi.mini.zalo.me/notification/template"
         headers = {
             "Content-Type": "application/json",
-            "X-Api-Key": self.miniapp_api_key,
+            "X-Api-Key": f"Bearer {self.miniapp_api_key}",
             "X-User-Id": str(zalo_user_id),
             "X-MiniApp-Id": self.miniapp_id
         }
@@ -152,7 +152,7 @@ class ZaloService:
         url = "https://openapi.mini.zalo.me/notification/template"
         headers = {
             "Content-Type": "application/json",
-            "X-Api-Key": self.miniapp_api_key,
+            "X-Api-Key": f"Bearer {self.miniapp_api_key}",
             "X-User-Id": str(self.admin_zalo_id),
             "X-MiniApp-Id": self.miniapp_id
         }
@@ -226,7 +226,7 @@ class ZaloService:
                 url = "https://openapi.mini.zalo.me/notification/template"
                 headers = {
                     "Content-Type": "application/json",
-                    "X-Api-Key": self.miniapp_api_key,
+                    "X-Api-Key": f"Bearer {self.miniapp_api_key}",
                     "X-User-Id": str(zalo_user_id),
                     "X-MiniApp-Id": self.miniapp_id
                 }
@@ -292,7 +292,7 @@ class ZaloService:
                 url = 'https://openapi.mini.zalo.me/notification/template'
                 headers = {
                     'Content-Type': 'application/json',
-                    'X-Api-Key': self.miniapp_api_key,
+                    'X-Api-Key': f'Bearer {self.miniapp_api_key}',
                     'X-User-Id': str(self.admin_zalo_id),
                     'X-MiniApp-Id': self.miniapp_id
                 }
