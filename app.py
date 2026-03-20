@@ -214,6 +214,17 @@ def register_routes(app):
         results = zalo_service.diagnose_config()
         return jsonify(results)
 
+    @app.route('/api/debug/refresh_token')
+    def api_debug_refresh_token():
+        """Force refresh Zalo OA token"""
+        from services.zalo_service import zalo_service
+        success = zalo_service.refresh_zalo_token()
+        return jsonify({
+            "success": success,
+            "access_token": "SET" if zalo_service.access_token else "MISSING",
+            "refresh_token": "SET" if zalo_service.refresh_token else "MISSING"
+        })
+
     @app.route('/api/logs/<int:log_id>/image')
     def api_log_image(log_id):
         """Serve direct image from base64 DB data or file path"""
