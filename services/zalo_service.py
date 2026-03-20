@@ -264,7 +264,7 @@ class ZaloService:
 
     def diagnose_config(self):
         """Kiem tra cau hinh va tra ve ket qua chan doan"""
-        results = {}
+        results = {'diagnose_version': 'v1.1'}
         
         # Detect outgoing IP (to help with -113 Invalid IP)
         try:
