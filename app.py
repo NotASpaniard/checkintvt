@@ -490,7 +490,8 @@ def register_routes(app):
                 import os as _os
                 save_dir = 'static/captures'
                 _os.makedirs(save_dir, exist_ok=True)
-                filename = f"capture_{snap_time.replace(' ','_').replace(':','')}_{face_id_raw}.jpg"
+                safe_time = (snap_time or 'unknown_time').replace(' ','_').replace(':','')
+                filename = f"capture_{safe_time}_{face_id_raw}.jpg"
                 filepath = _os.path.join(save_dir, filename)
                 with open(filepath, 'wb') as f:
                     f.write(img_data)
