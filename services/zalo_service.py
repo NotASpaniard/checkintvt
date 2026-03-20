@@ -265,6 +265,14 @@ class ZaloService:
     def diagnose_config(self):
         """Kiem tra cau hinh va tra ve ket qua chan doan"""
         results = {}
+        
+        # Detect outgoing IP (to help with -113 Invalid IP)
+        try:
+            ip_r = requests.get('https://api.ipify.org?format=json', timeout=5)
+            results['outgoing_ip'] = ip_r.json().get('ip')
+        except Exception as e:
+            results['outgoing_ip'] = f'ERROR: {e}'
+
         results['access_token'] = 'SET' if self.access_token else 'MISSING'
         results['refresh_token'] = 'SET' if self.refresh_token else 'MISSING'
         results['app_id'] = 'SET' if self.app_id else 'MISSING'
