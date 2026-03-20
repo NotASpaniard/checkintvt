@@ -205,6 +205,15 @@ def register_routes(app):
             "recent_logs": result
         })
 
+    @app.route('/api/debug/test_noti')
+    def api_debug_test_noti():
+        """Chan doan cau hinh Zalo va gui tin test cho Admin.
+        Goi: /api/debug/test_noti
+        Tra ve: trang thai cau hinh + ket qua gui thu tu ca 2 kenh."""
+        from services.zalo_service import zalo_service
+        results = zalo_service.diagnose_config()
+        return jsonify(results)
+
     @app.route('/api/logs/<int:log_id>/image')
     def api_log_image(log_id):
         """Serve direct image from base64 DB data or file path"""

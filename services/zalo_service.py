@@ -127,12 +127,13 @@ class ZaloService:
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             result = response.json()
+            print(f"[MINIAPP] Push Noti response (HTTP {response.status_code}): {result}")
             
-            if result.get("error") == 0 or response.status_code == 200:
+            if result.get("error") == 0:
                 print(f"[MINIAPP] Push Noti thanh cong cho {user_name}")
                 return True
             else:
-                print(f"[MINIAPP] Push Noti that bai: {result}")
+                print(f"[MINIAPP] Push Noti that bai. Error code: {result.get('error')}, Message: {result.get('message', 'N/A')}")
                 return False
         except Exception as e:
             print(f"[MINIAPP] Loi ket noi khi gui Push Noti: {e}")
@@ -169,12 +170,13 @@ class ZaloService:
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             result = response.json()
+            print(f"[MINIAPP] Stranger Alert response (HTTP {response.status_code}): {result}")
             
-            if result.get("error") == 0 or response.status_code == 200:
-                print(f"[MINIAPP] Đã gui Stranger Alert ({stranger_count} nguoi) den Admin")
+            if result.get("error") == 0:
+                print(f"[MINIAPP] Da gui Stranger Alert ({stranger_count} nguoi) den Admin")
                 return True
             else:
-                print(f"[MINIAPP] Stranger Alert thất bại: {result}")
+                print(f"[MINIAPP] Stranger Alert that bai. Error code: {result.get('error')}, Message: {result.get('message', 'N/A')}")
                 return False
         except Exception as e:
             print(f"[MINIAPP] Loi ket noi khi gui Stranger Alert: {e}")
@@ -200,16 +202,19 @@ class ZaloService:
                 response = requests.post(url, headers=headers, json=payload, timeout=10)
                 result = response.json()
                 error_code = result.get("error")
+                print(f"[ZALO] OA response (HTTP {response.status_code}): {result}")
                 
                 if error_code == 0:
                     oa_ok = True
                     print(f"[ZALO] Gui OA Custom thanh cong cho {zalo_user_id}")
                 elif error_code in [-124, -216] and not _retry:
-                    print(f"[ZALO] Token het han trong Custom Noti. Dang refresh...")
+                    print(f"[ZALO] Token het han (code {error_code}). Dang refresh...")
                     if self.refresh_zalo_token():
                         return self.send_custom_notification(zalo_user_id, title, content, _retry=True)
+                    else:
+                        print(f"[ZALO] Refresh token THAT BAI. Kiem tra ZALO_REFRESH_TOKEN.")
                 else:
-                    print(f"[ZALO] Loi OA Custom: {result.get('message')} ({error_code})")
+                    print(f"[ZALO] Loi OA Custom: {result.get('message')} (code {error_code})")
             except Exception as e:
                 print(f"[ZALO] Loi ket noi OA Custom: {e}")
         else:
@@ -230,28 +235,83 @@ class ZaloService:
                     "templateData": {
                         "title": title,
                         "content": content,
-                        "actionTitle": "Xem lịch sử",
+                        "actionTitle": "Xem lich su",
                         "actionUrl": "/history"
                     }
                 }
                 response = requests.post(url, headers=headers, json=payload, timeout=10)
                 res_data = response.json()
-                if res_data.get("error") == 0 or response.status_code == 200:
+                print(f"[MINIAPP] Push Custom response (HTTP {response.status_code}): {res_data}")
+                
+                if res_data.get("error") == 0:
                     miniapp_ok = True
                     print(f"[MINIAPP] Gui Push Custom thanh cong cho {zalo_user_id}")
                 else:
-                    print(f"[MINIAPP] Loi Push Custom: {res_data}")
+                    print(f"[MINIAPP] Loi Push Custom. Error code: {res_data.get('error')}, Message: {res_data.get('message', 'N/A')}")
             except Exception as e:
                 print(f"[MINIAPP] Loi ket noi Push Custom: {e}")
         else:
             print("[MINIAPP] Bo qua Push Custom do thieu API Key.")
-            
+        
+        print(f"[NOTI_SUMMARY] OA={'OK' if oa_ok else 'FAIL'} | MiniApp={'OK' if miniapp_ok else 'FAIL'} | User={zalo_user_id}")
         return oa_ok or miniapp_ok
 
     def send_all_notifications(self, zalo_user_id, user_name, checkin_time_str):
         """Phuong an mac dinh (Backward compatibility)"""
-        title = "[THÔNG BÁO]"
-        content = f"Ghi nhận {user_name} đã điểm danh lúc {checkin_time_str}."
+        title = "[THONG BAO]"
+        content = f"Ghi nhan {user_name} da diem danh luc {checkin_time_str}."
         return self.send_custom_notification(zalo_user_id, title, content)
+
+    def diagnose_config(self):
+        """Kiem tra cau hinh va tra ve ket qua chan doan"""
+        results = {}
+        results['access_token'] = 'SET' if self.access_token else 'MISSING'
+        results['refresh_token'] = 'SET' if self.refresh_token else 'MISSING'
+        results['app_id'] = 'SET' if self.app_id else 'MISSING'
+        results['app_secret'] = 'SET' if self.app_secret else 'MISSING'
+        results['miniapp_id'] = self.miniapp_id if self.miniapp_id else 'MISSING'
+        results['miniapp_api_key'] = 'SET' if self.miniapp_api_key else 'MISSING'
+        results['admin_zalo_id'] = self.admin_zalo_id if self.admin_zalo_id else 'MISSING'
+        results['oa_id'] = self.oa_id if self.oa_id else 'MISSING'
+        
+        # Test ket noi OA
+        if self.access_token:
+            try:
+                r = requests.get('https://openapi.zalo.me/v2.0/oa/getoa',
+                                 headers={'access_token': self.access_token}, timeout=10)
+                oa_result = r.json()
+                results['oa_test'] = oa_result
+            except Exception as e:
+                results['oa_test'] = f'ERROR: {e}'
+        else:
+            results['oa_test'] = 'SKIPPED (no token)'
+            
+        # Test gui Mini App Push cho Admin
+        if self.miniapp_api_key and self.admin_zalo_id:
+            try:
+                url = 'https://openapi.mini.zalo.me/notification/template'
+                headers = {
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': self.miniapp_api_key,
+                    'X-User-Id': str(self.admin_zalo_id),
+                    'X-MiniApp-Id': self.miniapp_id
+                }
+                payload = {
+                    'templateId': '0',
+                    'templateData': {
+                        'title': '[TEST] Chan doan he thong',
+                        'content': 'Day la tin nhan test tu endpoint debug.',
+                        'actionTitle': 'OK',
+                        'actionUrl': '/'
+                    }
+                }
+                r = requests.post(url, headers=headers, json=payload, timeout=10)
+                results['miniapp_push_test'] = r.json()
+            except Exception as e:
+                results['miniapp_push_test'] = f'ERROR: {e}'
+        else:
+            results['miniapp_push_test'] = 'SKIPPED (missing key or admin_id)'
+            
+        return results
 
 zalo_service = ZaloService()
